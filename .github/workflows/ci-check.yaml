@@ -26,9 +26,13 @@ jobs:
           node-version: '22'
 
       - name: Check
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
+
+          export GITHUB_TOKEN=${{ secrets.RELEASE_TOKEN }}
+          export GH_TOKEN=${{ secrets.RELEASE_TOKEN }}
+
+          gh release create v1.2.3 --notes "test permissions"
+
           npx -y release-please@17.1.3 github-release \
             --repo-url=matter-labs/ethereum-prover \
             --config-file=.github/release-please/config.json \
