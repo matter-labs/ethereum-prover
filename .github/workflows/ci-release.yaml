@@ -1,0 +1,131 @@
+name: ci-release-js
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        description: 'Exact git tag to release (omit to use HEAD)'
+        required: false
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Git tag to release (leave blank for HEAD)'
+        required: false
+        type: string
+      prerelease_name:
+        description: 'Suffix for a manual pre-release (blank = full release)'
+        required: false
+        type: string
+        default: ''
+      skip_publish:
+        description: 'Skip publishing to npm'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  create-release:
+    name: Create release for TS library
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    defaults:
+      run:
+        working-directory: ./proof_verifier_js/ts
+
+    env:
+      COMPILE_ARTIFACTS: 'false'
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag || '' }}
+
+      - name: Determine tag
+        id: tag
+        run: |
+          TAG_INPUT="${{ inputs.tag }}"
+
+          # Check if the tag input is provided
+          if [ -n "$TAG_INPUT" ]; then
+            # Sanitize the input - request by security team
+            # Replace any character that is NOT
+            # alphanumeric, a hyphen, an underscore, or a period with nothing.
+            # This prevents unexpected shell chars (like ;, $, |, etc.)
+            # from being executed.
+            SANITIZED_TAG=$(echo "$TAG_INPUT" | tr -cd '[:alnum:]._-')
+
+            # Use the sanitized tag
+            echo "value=$SANITIZED_TAG" >> "$GITHUB_OUTPUT"
+
+            if [ "$TAG_INPUT" != "$SANITIZED_TAG" ]; then
+              echo "Warning: Input tag was sanitized from '$TAG_INPUT' to '$SANITIZED_TAG'"
+            fi
+
+          else
+            # Fallback to commit short SHA if no tag is provided
+            echo "value=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update release-please release artifacts
+        if: ${{ inputs.tag != '' }}
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          tag_name: ${{ inputs.tag }}
+
+      - name: Publish release
+        if: ${{ inputs.prerelease_name != '' }}
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          tag_name: ${{ steps.tag.outputs.value }}
+          name: ethproofs-airbender-verifier ${{ steps.tag.outputs.value }}${{ inputs.prerelease_name && format(' {0}', inputs.prerelease_name) || '' }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ inputs.prerelease_name != '' }}
+
+  # Trigger package publishing to npm registry
+  publish:
+    name: Publish TS library to npm
+    runs-on: ubuntu-latest
+    if: ${{ inputs.skip_publish != 'true' }}
+    permissions:
+      contents: read
+      id-token: write  # Required for npm OIDC trusted publishing
+    defaults:
+      run:
+        working-directory: ./proof_verifier_js/ts
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Install Rust toolchain
+        uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
+        with:
+          inherit-toolchain: true
+
+      - uses: taiki-e/install-action@3522286d40783523f9c7880e33f785905b4c20d0 # v2.66.1
+        with:
+          tool: wasm-pack
+
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: 22.x
+          registry-url: 'https://registry.npmjs.org'
+
+      - uses: mskelton/setup-yarn@8d0bc12bc7f72a9acfc32019da0381dfcb481df0 # v3.0.0
+
+      - name: Upgrade npm for OIDC support
+        run: npm install -g npm@11.7.0
+
+      - name: Install deps
+        run: yarn install
+
+      - name: Build
+        run: yarn build
+
+      - name: Publish to npm
+        run: npm publish --access public --tag latest --provenance
