@@ -35,7 +35,7 @@ jobs:
             https://api.github.com/repos/matter-labs/ethereum-prover/git/refs \
             --data-raw '{
               "ref": "refs/tags/test-tag-second",
-              "sha": "d7633a13387d7e4c685719fd4121b7146a5ef4f0"
+              "sha": "670e188b9dd6d5c623cde5c500d12c21821f4b33"
             }'
 
           # curl -i \
