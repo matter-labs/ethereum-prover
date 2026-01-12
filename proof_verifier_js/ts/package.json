@@ -25,7 +25,7 @@
     }
   },
   "scripts": {
-    "build:wasm": "cd ../wasm && wasm-pack build --target web --out-dir ../ts/wasm/pkg",
+    "build:wasm": "cd ../wasm && RUST_MIN_STACK=267108864 wasm-pack build --target web --out-dir ../ts/wasm/pkg",
     "build:ts": "tsup",
     "build": "yarn build:wasm && yarn build:ts",
     "prepack": "yarn build"

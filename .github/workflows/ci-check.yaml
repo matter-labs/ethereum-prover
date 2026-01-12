@@ -1,0 +1,80 @@
+name: ci-run
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  general-checks:
+    name: general-checks 🧹
+    runs-on: matterlabs-ci-runner-high-performance
+    defaults:
+      run:
+        working-directory: ./proof_verifier_js/ts
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Install Rust toolchain
+        uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
+        with:
+          inherit-toolchain: true
+
+      - uses: taiki-e/install-action@3522286d40783523f9c7880e33f785905b4c20d0 # v2.66.1
+        with:
+          tool: wasm-pack
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '22'
+
+      - uses: mskelton/setup-yarn@8d0bc12bc7f72a9acfc32019da0381dfcb481df0 # v3.0.0
+
+      - name: Install deps
+        run: yarn install
+
+      - name: Build
+        run: yarn build
+
+  license-check:
+    name: license-check 📜
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./proof_verifier_js/ts
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '22'
+
+      - name: Install license-checker
+        run: npm install -g license-checker
+
+      - name: Run license checker
+        run: |
+          license-checker --production \
+            --onlyAllow "MIT;Apache-2.0" \
+            --summary
+
+  # Special job that allows some of the jobs to be skipped or failed
+  # requiring others to be successful
+  pr-checks:
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - general-checks
+    steps:
+      - name: Decide on PR checks
+        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}
