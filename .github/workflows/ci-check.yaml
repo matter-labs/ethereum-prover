@@ -27,17 +27,11 @@ jobs:
 
       - name: Check
         run: |
-
-          export GITHUB_TOKEN=${{ secrets.RELEASE_TOKEN }}
-          export GH_TOKEN=${{ secrets.RELEASE_TOKEN }}
-
-          gh release create v1.2.3 --notes "test permissions"
-
           npx -y release-please@17.1.3 github-release \
             --repo-url=matter-labs/ethereum-prover \
             --config-file=.github/release-please/config.json \
             --manifest-file=.github/release-please/manifest.json \
-            --trace --token ${{ secrets.RELEASE_TOKEN }}
+            --trace --debug --token ${{ secrets.RELEASE_TOKEN }}
 
   #     - name: Install Rust toolchain
   #       uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
