@@ -1,0 +1,3 @@
+[submodule "zksync-os"]
+	path = zksync-os
+	url = git@github.com:matter-labs/zksync-os.git

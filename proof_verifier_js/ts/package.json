@@ -1,0 +1,44 @@
+{
+  "name": "@matterlabs/ethproofs-airbender-verifier",
+  "version": "0.1.0",
+  "description": "Airbender ZK Proof Verifier for EthProofs",
+  "license": "(MIT OR Apache-2.0)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/matter-labs/ethereum-prover"
+  },
+  "homepage": "https://github.com/matter-labs/ethereum-prover",
+  "keywords": [
+    "ZKsync",
+    "Ethereum"
+  ],
+  "author": "Matter Labs",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "readme": "README.md",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build:wasm": "cd ../wasm && wasm-pack build --target web --out-dir ../ts/wasm/pkg",
+    "build:ts": "tsup",
+    "build": "yarn build:wasm && yarn build:ts",
+    "prepack": "yarn build"
+  },
+  "files": [
+    "dist",
+    "wasm/pkg",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "devDependencies": {
+    "tsup": "^8.0.1",
+    "typescript": "^5.4.5"
+  }
+}
