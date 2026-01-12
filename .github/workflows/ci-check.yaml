@@ -12,7 +12,7 @@ concurrency:
 jobs:
   general-checks:
     name: general-checks 🧹
-    runs-on: matterlabs-ci-runner-high-performance
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./proof_verifier_js/ts
@@ -27,6 +27,11 @@ jobs:
 
       - name: Check
         run: |
+
+          curl -i \
+            -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/matter-labs/ethereum-prover
 
           curl -i \
             -X POST https://api.github.com/repos/matter-labs/ethereum-prover/releases \
