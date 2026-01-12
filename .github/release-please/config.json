@@ -5,7 +5,7 @@
     "include-component-in-tag": false,
     "group-pull-request-title-pattern": "chore: release ${component} ${version}",
     "packages": {
-        "./proof_verifier_js/ts": {
+        "proof_verifier_js/ts": {
             "component": "@ethproofs-airbender-verifier",
             "extra-files": [
                 {
