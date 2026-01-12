@@ -33,6 +33,14 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/matter-labs/ethereum-prover
 
+          # 1) Is the commit resolvable?
+          curl -i -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/matter-labs/ethereum-prover/commits/d7633a13387d7e4c685719fd4121b7146a5ef4f0
+
+          # 2) Is that SHA on main?
+          curl -s -H "Authorization: Bearer ${{ secrets.RELEASE_TOKEN }}" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/matter-labs/ethereum-prover/compare/main...d7633a13387d7e4c685719fd4121b7146a5ef4f0 | jq -r '.status, .message?'
+
           curl -i \
             -X POST https://api.github.com/repos/matter-labs/ethereum-prover/releases \
             -H "Accept: application/vnd.github+json" \
