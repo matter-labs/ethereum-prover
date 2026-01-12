@@ -45,4 +45,6 @@ Both must match the proof’s circuit version.
 
 ## License
 
-MIT or Apache-2.0. See [`LICENSE-MIT`](LICENSE-MIT) and [`LICENSE-APACHE`](LICENSE-APACHE).
+MIT or Apache-2.0.
+
+See [`LICENSE-MIT`](LICENSE-MIT) and [`LICENSE-APACHE`](LICENSE-APACHE).
