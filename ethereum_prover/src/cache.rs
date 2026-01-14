@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
-use alloy::rpc::types::{Block as RpcBlock, debug::ExecutionWitness};
+use alloy::{
+    primitives::B256,
+    rpc::types::{Block as RpcBlock, TransactionReceipt, debug::ExecutionWitness},
+};
 
 #[derive(Debug, Clone)]
 pub(super) struct CacheStorage {
@@ -12,6 +15,7 @@ struct BlockCachePaths {
     dir: PathBuf,
     block_json: PathBuf,
     execution_witness_json: PathBuf,
+    receipts_dir: PathBuf,
 }
 
 impl CacheStorage {
@@ -66,18 +70,48 @@ impl CacheStorage {
         Ok(Some((block, witness)))
     }
 
+    pub fn save_receipt(
+        &self,
+        block_number: u64,
+        receipt: TransactionReceipt,
+    ) -> anyhow::Result<()> {
+        let paths = self.ensure_block_dir(block_number)?;
+        let tx_hash = receipt.transaction_hash;
+        let receipt_path = paths.receipts_dir.join(format!("{:?}.json", tx_hash));
+        let data = serde_json::to_string_pretty(&receipt)?;
+        std::fs::write(receipt_path, data)?;
+        Ok(())
+    }
+
+    pub fn load_receipt(
+        &self,
+        block_number: u64,
+        tx_hash: &B256,
+    ) -> anyhow::Result<Option<TransactionReceipt>> {
+        let paths = self.block_paths(block_number);
+        let receipt_path = paths.receipts_dir.join(format!("{:?}.json", tx_hash));
+        if !receipt_path.exists() {
+            return Ok(None);
+        }
+        let data = std::fs::read_to_string(receipt_path)?;
+        let receipt = serde_json::from_str(&data)?;
+        Ok(Some(receipt))
+    }
+
     fn block_paths(&self, block_number: u64) -> BlockCachePaths {
         let dir = self.root.join("blocks").join(block_number.to_string());
         BlockCachePaths {
             dir: dir.clone(),
             block_json: dir.join("block.json"),
             execution_witness_json: dir.join("execution_witness.json"),
+            receipts_dir: dir.join("receipts"),
         }
     }
 
     fn ensure_block_dir(&self, block_number: u64) -> anyhow::Result<BlockCachePaths> {
         let paths = self.block_paths(block_number);
         std::fs::create_dir_all(&paths.dir)?;
+        std::fs::create_dir_all(&paths.receipts_dir)?;
         Ok(paths)
     }
 

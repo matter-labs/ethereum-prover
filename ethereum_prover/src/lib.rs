@@ -31,44 +31,51 @@ impl Runner {
 
         let cache_storage = CacheStorage::new(".cache");
 
-        let (block_stream_task, block_stream_receiver) = match cli.command {
-            Command::Run => {
-                let Some(rpc_url) = config.rpc_url.clone() else {
-                    anyhow::bail!("RPC URL is required for continuous mode");
-                };
+        let (block_stream_task, block_stream_receiver, should_create_cache_manager) =
+            match cli.command {
+                Command::Run => {
+                    let Some(rpc_url) = config.rpc_url.clone() else {
+                        anyhow::bail!("RPC URL is required for continuous mode");
+                    };
 
-                // Create and run continuous block stream
-                let (stream, receiver) = tasks::block_stream::ContinuousBlockStream::new(
-                    rpc_url.expose_secret().to_string(),
-                    config.prover_id,
-                    config.block_mod,
-                    cache_storage.clone(),
-                    config.cache_policy,
-                );
-                (tokio::spawn(stream.run()), receiver)
-            }
-            Command::Block { block_number } => {
-                let (stream, receiver) = tasks::block_stream::SingleBlockStream::new(
-                    block_number,
-                    config
-                        .rpc_url
-                        .clone()
-                        .map(|u| u.expose_secret().to_string()),
-                    cache_storage.clone(),
-                    config.cache_policy,
-                );
-                (tokio::spawn(stream.run()), receiver)
-            }
-        };
+                    // Create and run continuous block stream
+                    let (stream, receiver) = tasks::block_stream::ContinuousBlockStream::new(
+                        rpc_url.expose_secret().to_string(),
+                        config.prover_id,
+                        config.block_mod,
+                        cache_storage.clone(),
+                        config.cache_policy,
+                    );
+                    (tokio::spawn(stream.run()), receiver, true)
+                }
+                Command::Block { block_number } => {
+                    let (stream, receiver) = tasks::block_stream::SingleBlockStream::new(
+                        block_number,
+                        config
+                            .rpc_url
+                            .clone()
+                            .map(|u| u.expose_secret().to_string()),
+                        cache_storage.clone(),
+                        config.cache_policy,
+                    );
+                    // Single block mode is used for debugging, so we don't want to remove cache artifacts
+                    (tokio::spawn(stream.run()), receiver, false)
+                }
+            };
         tasks.push(block_stream_task);
 
-        let (mode_task, mode_command_receiver) = match config.mode {
+        let (mode_task, mut mode_command_receiver) = match config.mode {
             Mode::CpuWitness => {
                 let cpu_witness_generator = CpuWitnessGenerator::new(config.app_bin_path);
                 let (task, command_receiver) = tasks::cpu_witness::CpuWitnessTask::new(
                     cpu_witness_generator,
                     block_stream_receiver,
                     config.on_failure,
+                    config
+                        .rpc_url
+                        .clone()
+                        .map(|u| u.expose_secret().to_string()),
+                    cache_storage.clone(),
                 );
                 (tokio::spawn(task.run()), command_receiver)
             }
@@ -87,15 +94,18 @@ impl Runner {
         };
         tasks.push(mode_task);
 
-        let (cache_manager_task, mode_command_receiver) = {
-            let (task, mode_command_receiver) = tasks::cache_manager::CacheManagerTask::new(
-                mode_command_receiver,
-                cache_storage,
-                config.cache_policy,
-            );
-            (tokio::spawn(task.run()), mode_command_receiver)
-        };
-        tasks.push(cache_manager_task);
+        if should_create_cache_manager {
+            let (cache_manager_task, new_command_receiver) = {
+                let (task, mode_command_receiver) = tasks::cache_manager::CacheManagerTask::new(
+                    mode_command_receiver,
+                    cache_storage,
+                    config.cache_policy,
+                );
+                (tokio::spawn(task.run()), mode_command_receiver)
+            };
+            mode_command_receiver = new_command_receiver;
+            tasks.push(cache_manager_task);
+        }
 
         let submission_task = if config.ethproofs_submission.enabled() {
             let Some(token) = config.ethproofs_token.clone() else {

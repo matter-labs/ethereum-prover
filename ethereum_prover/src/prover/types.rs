@@ -1,12 +1,13 @@
 use alloy::{
     consensus::Header,
     rlp::Encodable as _,
-    rpc::types::{debug::ExecutionWitness, Block},
+    rpc::types::{Block, Transaction, debug::ExecutionWitness},
 };
 
 #[derive(Clone)]
 pub struct EthBlockInput {
-    pub transactions: Vec<Vec<u8>>,
+    pub transactions: Vec<Transaction>,
+    pub encoded_transactions: Vec<Vec<u8>>,
     pub execution_witness: ExecutionWitness,
     pub block_header: Header,
     pub withdrawals_rlp: Vec<u8>,
@@ -21,7 +22,7 @@ impl EthBlockInput {
         } else {
             Vec::new()
         };
-        let transactions = block
+        let encoded_transactions = block
             .transactions
             .clone()
             .into_transactions()
@@ -29,7 +30,8 @@ impl EthBlockInput {
             .collect();
 
         Self {
-            transactions,
+            transactions: block.transactions.into_transactions().collect(),
+            encoded_transactions,
             execution_witness,
             block_header: block.header.clone().into(),
             withdrawals_rlp,

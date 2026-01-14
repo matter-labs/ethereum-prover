@@ -3,7 +3,7 @@ use alloy::rlp::{Decodable, Encodable};
 use anyhow::{anyhow, bail};
 use basic_system::system_implementation::ethereum_storage_model::caches::account_properties::EthereumAccountProperties;
 use basic_system::system_implementation::ethereum_storage_model::{
-    digits_from_key, EthereumMPT, Path as MptPath,
+    EthereumMPT, Path as MptPath, digits_from_key,
 };
 use crypto::MiniDigest;
 use forward_system::run::query_processors::{
@@ -99,7 +99,7 @@ pub(crate) fn build_oracle(input: EthBlockInput) -> anyhow::Result<ZkEENonDeterm
     }
 
     let tx_source = TxListSource {
-        transactions: input.transactions.into(),
+        transactions: input.encoded_transactions.into(),
     };
 
     let mut target_header_encoding = vec![];

@@ -84,6 +84,7 @@ impl GpuProveTask {
         let block_number = witness.block_header.number;
         let oracle = build_oracle(witness)?;
 
-        self.gpu_prover.prove(block_number, oracle) // TODO: make non-blocking
+        tracing::info!("Proving block {} on GPU", block_number);
+        self.gpu_prover.prove(block_number, oracle).await
     }
 }

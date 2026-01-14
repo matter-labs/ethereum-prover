@@ -1,5 +1,6 @@
 use oracle_provider::ZkEENonDeterminismSource;
 use std::path::Path;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 #[derive(Debug)]
@@ -10,7 +11,7 @@ pub struct ProofResult {
 }
 
 pub struct Prover {
-    inner: execution_utils::unrolled_gpu::UnrolledProver,
+    inner: Arc<Mutex<execution_utils::unrolled_gpu::UnrolledProver>>,
 }
 
 impl std::fmt::Debug for Prover {
@@ -33,16 +34,26 @@ impl Prover {
             configuration,
             execution_utils::unrolled_gpu::UnrolledProverLevel::RecursionUnified,
         );
-        Ok(Self { inner })
+        Ok(Self {
+            inner: Arc::new(Mutex::new(inner)),
+        })
     }
 
-    pub fn prove(
+    pub async fn prove(
         &self,
         block_number: u64,
         oracle: ZkEENonDeterminismSource,
     ) -> anyhow::Result<ProofResult> {
         let start = Instant::now();
-        let (proof, cycles) = self.inner.prove(block_number, oracle);
+
+        let inner = self.inner.clone();
+
+        let (proof, cycles) = tokio::task::spawn_blocking(move || {
+            let prover = inner.lock().unwrap();
+            prover.prove(block_number, oracle)
+        })
+        .await?;
+
         let proving_time_secs = start.elapsed().as_secs_f64();
         let proof_bytes = bincode::serde::encode_to_vec(&proof, bincode::config::standard())?;
         Ok(ProofResult {
