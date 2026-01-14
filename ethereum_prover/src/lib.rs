@@ -80,10 +80,14 @@ impl Runner {
                 (tokio::spawn(task.run()), command_receiver)
             }
             Mode::GpuProve => {
-                // TODO 1: support worker threads
-                // TODO 2: this is blocking, use `tokio::task::spawn_blocking`?
-                let gpu_prover =
-                    Prover::new(config.app_bin_path.as_path(), None).expect("Cannot create prover");
+                // TODO: support worker threads? Though it's likely not needed anytime soon.
+                let app_bin_path = config.app_bin_path.clone();
+                let gpu_prover = tokio::task::spawn_blocking(move || {
+                    Prover::new(app_bin_path.as_path(), None).expect("Cannot create prover")
+                })
+                .await
+                .expect("Prover creation task panicked");
+
                 let (task, command_receiver) = tasks::gpu_prove::GpuProveTask::new(
                     gpu_prover,
                     block_stream_receiver,
