@@ -148,7 +148,7 @@
   integrity sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==
 
 "@matterlabs/ethproofs-airbender-verifier@file:../ts":
-  version "0.1.0"
+  version "0.1.1"
 
 "@rollup/rollup-android-arm-eabi@4.55.1":
   version "4.55.1"

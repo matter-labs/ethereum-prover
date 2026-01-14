@@ -5,6 +5,6 @@ export default defineConfig({
   plugins: [vue()],
   assetsInclude: ["**/*.wasm"],
   optimizeDeps: {
-    exclude: ["proof-verifier-js"]
+    exclude: ["@matterlabs/ethproofs-airbender-verifier"]
   }
 });
