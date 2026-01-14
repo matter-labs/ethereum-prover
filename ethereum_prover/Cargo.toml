@@ -1,0 +1,50 @@
+[package]
+name = "ethereum_prover"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+anyhow = "1"
+alloy = { version = "1", features = ["rlp", "full", "ssz", "eips"] }
+bincode = { version = "2", features = ["serde"] }
+base64 = "0.21.7"
+clap = { version = "4.5", features = ["derive"] }
+flate2 = "1"
+reqwest = { version = "0.12", features = ["json"] }
+ruint = { workspace = true, default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+async-trait = "0.1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+toml = "0.8"
+thiserror = "1"
+
+forward_system = { path = "../../zksync-os/forward_system" }
+oracle_provider = { path = "../../zksync-os/oracle_provider" }
+callable_oracles = { path = "../../zksync-os/callable_oracles" }
+crypto = { path = "../../zksync-os/crypto" }
+zk_ee = { path = "../../zksync-os/zk_ee" }
+basic_system = { path = "../../zksync-os/basic_system" }
+zksync_os_runner = { path = "../../zksync-os/zksync_os_runner" }
+
+# execution_utils = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", default-features = false, optional = true }
+# risc_v_simulator = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", features = ["delegation"], optional = true }
+execution_utils = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", default-features = false, features = ["prover", "gpu_prover"] }
+risc_v_simulator = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", features = ["delegation"] }
+smart-config = "0.4.0-pre.1"
+serde_yaml = "0.9.34"
+futures = "0.3.31"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+# [features]
+# with_gpu_prover = ["execution_utils", "execution_utils/prover", "execution_utils/gpu_prover", "risc_v_simulator"]
