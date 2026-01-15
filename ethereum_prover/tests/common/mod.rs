@@ -27,12 +27,11 @@ pub fn app_bin_path() -> PathBuf {
 }
 
 pub fn load_fixture_input(fixture: &str) -> EthBlockInput {
-    let block_json = std::fs::read_to_string(fixture_block_path(fixture))
-        .expect("read fixture block");
-    let witness_json = std::fs::read_to_string(fixture_witness_path(fixture))
-        .expect("read fixture witness");
-    let block: RpcBlock =
-        serde_json::from_str(&block_json).expect("parse fixture block");
+    let block_json =
+        std::fs::read_to_string(fixture_block_path(fixture)).expect("read fixture block");
+    let witness_json =
+        std::fs::read_to_string(fixture_witness_path(fixture)).expect("read fixture witness");
+    let block: RpcBlock = serde_json::from_str(&block_json).expect("parse fixture block");
     let witness: ExecutionWitness =
         serde_json::from_str(&witness_json).expect("parse fixture witness");
     EthBlockInput::new(block, witness)
