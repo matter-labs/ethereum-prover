@@ -2,16 +2,26 @@
     "bump-minor-pre-major": true,
     "bump-patch-for-minor-pre-major": true,
     "release-type": "simple",
-    "include-component-in-tag": false,
+    "include-component-in-tag": true,
     "group-pull-request-title-pattern": "chore: release ${component} ${version}",
     "packages": {
-        "proof_verifier_js/ts": {
-            "component": "@ethproofs-airbender-verifier",
+        "proof_verifier_js": {
+            "component": "ethproofs-airbender-verifier",
             "extra-files": [
                 {
                     "type": "json",
-                    "path": "package.json",
+                    "path": "ts/package.json",
                     "jsonpath": "$.version"
+                }
+            ]
+        },
+        "ethereum_prover": {
+            "component": "ethereum-prover",
+            "extra-files": [
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.package.version"
                 }
             ]
         }
