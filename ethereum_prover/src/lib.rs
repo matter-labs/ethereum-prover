@@ -27,44 +27,44 @@ impl Runner {
     }
 
     pub async fn run(self, cli: Cli, config: EthProverConfig) -> anyhow::Result<()> {
-        let mut tasks = Vec::new();
+        let mut join_set = tokio::task::JoinSet::new();
 
         let cache_storage = CacheStorage::new(".cache");
 
-        let (block_stream_task, block_stream_receiver, should_create_cache_manager) =
-            match cli.command {
-                Command::Run => {
-                    let Some(rpc_url) = config.rpc_url.clone() else {
-                        anyhow::bail!("RPC URL is required for continuous mode");
-                    };
+        let (block_stream_receiver, should_create_cache_manager) = match cli.command {
+            Command::Run => {
+                let Some(rpc_url) = config.rpc_url.clone() else {
+                    anyhow::bail!("RPC URL is required for continuous mode");
+                };
 
-                    // Create and run continuous block stream
-                    let (stream, receiver) = tasks::block_stream::ContinuousBlockStream::new(
-                        rpc_url.expose_secret().to_string(),
-                        config.prover_id,
-                        config.block_mod,
-                        cache_storage.clone(),
-                        config.cache_policy,
-                    );
-                    (tokio::spawn(stream.run()), receiver, true)
-                }
-                Command::Block { block_number } => {
-                    let (stream, receiver) = tasks::block_stream::SingleBlockStream::new(
-                        block_number,
-                        config
-                            .rpc_url
-                            .clone()
-                            .map(|u| u.expose_secret().to_string()),
-                        cache_storage.clone(),
-                        config.cache_policy,
-                    );
-                    // Single block mode is used for debugging, so we don't want to remove cache artifacts
-                    (tokio::spawn(stream.run()), receiver, false)
-                }
-            };
-        tasks.push(block_stream_task);
+                // Create and run continuous block stream
+                let (stream, receiver) = tasks::block_stream::ContinuousBlockStream::new(
+                    rpc_url.expose_secret().to_string(),
+                    config.prover_id,
+                    config.block_mod,
+                    cache_storage.clone(),
+                    config.cache_policy,
+                );
+                join_set.spawn(stream.run());
+                (receiver, true)
+            }
+            Command::Block { block_number } => {
+                let (stream, receiver) = tasks::block_stream::SingleBlockStream::new(
+                    block_number,
+                    config
+                        .rpc_url
+                        .clone()
+                        .map(|u| u.expose_secret().to_string()),
+                    cache_storage.clone(),
+                    config.cache_policy,
+                );
+                // Single block mode is used for debugging, so we don't want to remove cache artifacts
+                join_set.spawn(stream.run());
+                (receiver, false)
+            }
+        };
 
-        let (mode_task, mut mode_command_receiver) = match config.mode {
+        let mut mode_command_receiver = match config.mode {
             Mode::CpuWitness => {
                 let cpu_witness_generator = CpuWitnessGenerator::new(config.app_bin_path);
                 let (task, command_receiver) = tasks::cpu_witness::CpuWitnessTask::new(
@@ -77,7 +77,8 @@ impl Runner {
                         .map(|u| u.expose_secret().to_string()),
                     cache_storage.clone(),
                 );
-                (tokio::spawn(task.run()), command_receiver)
+                join_set.spawn(task.run());
+                command_receiver
             }
             Mode::GpuProve => {
                 // TODO: support worker threads? Though it's likely not needed anytime soon.
@@ -93,10 +94,10 @@ impl Runner {
                     block_stream_receiver,
                     config.on_failure,
                 );
-                (tokio::spawn(task.run()), command_receiver)
+                join_set.spawn(task.run());
+                command_receiver
             }
         };
-        tasks.push(mode_task);
 
         if should_create_cache_manager {
             let (cache_manager_task, new_command_receiver) = {
@@ -105,13 +106,13 @@ impl Runner {
                     cache_storage,
                     config.cache_policy,
                 );
-                (tokio::spawn(task.run()), mode_command_receiver)
+                (task, mode_command_receiver)
             };
             mode_command_receiver = new_command_receiver;
-            tasks.push(cache_manager_task);
+            join_set.spawn(cache_manager_task.run());
         }
 
-        let submission_task = if config.ethproofs_submission.enabled() {
+        if config.ethproofs_submission.enabled() {
             let Some(token) = config.ethproofs_token.clone() else {
                 anyhow::bail!("EthProofs submission token is required when submission is enabled");
             };
@@ -129,17 +130,24 @@ impl Runner {
                 ethproofs_client,
                 mode_command_receiver,
             );
-            tokio::spawn(task.run())
+            join_set.spawn(task.run());
         } else {
             let task = tasks::eth_proofs_upload::EthProofsNoOpTask::new(mode_command_receiver);
-            tokio::spawn(task.run())
-        };
-        tasks.push(submission_task);
+            join_set.spawn(task.run());
+        }
 
-        let results = futures::future::join_all(tasks).await; // Wait until the stream is exhausted
-
-        for result in results {
-            result??; // TODO: better handling
+        while let Some(result) = join_set.join_next().await {
+            match result {
+                Ok(Ok(())) => {}
+                Ok(Err(err)) => {
+                    join_set.abort_all();
+                    return Err(err);
+                }
+                Err(err) => {
+                    join_set.abort_all();
+                    return Err(err.into());
+                }
+            }
         }
 
         Ok(())
