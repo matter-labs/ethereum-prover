@@ -69,7 +69,6 @@ jobs:
             --onlyAllow "MIT;Apache-2.0" \
             --summary
 
-  GPU prover fails to compile for some reason, to be fixed later.
   ethereum-prover-checks:
     name: ethereum-prover checks 🧪
     runs-on: matterlabs-ci-runner-high-performance
@@ -84,13 +83,14 @@ jobs:
       - name: Rustfmt
         run: cargo fmt -p ethereum_prover -- --check
 
-      # For some reason, it takes forever to run.
+      # TODO: For some reason, it takes forever to run.
       # - name: Clippy
       #   run: cargo clippy -p ethereum_prover --no-deps -- -D warnings
 
       - name: Tests (nextest)
         run: RUST_MIN_STACK=267108864 cargo nextest run -p ethereum_prover --release
 
+  # TODO: GPU prover fails to compile for some reason, to be fixed later.
   # ####################################
   # #  Build prover integration tests  #
   # ####################################
@@ -208,6 +208,7 @@ jobs:
     needs:
       - general-checks
       - ethereum-prover-checks
+      # TODO: fix GPU prover tests
       # - ethereum-prover-gpu-tests
     steps:
       - name: Decide on PR checks
