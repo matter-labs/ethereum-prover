@@ -63,11 +63,31 @@ impl GpuProveTask {
                 }
                 Err(err) => match self.on_failure {
                     OnFailure::Exit => {
+                        sentry::with_scope(
+                            |scope| {
+                                scope.set_level(Some(sentry::Level::Error));
+                                scope.set_tag("mode", "gpu_prove");
+                                scope.set_tag("block_number", block_number.to_string());
+                            },
+                            || {
+                                sentry_anyhow::capture_anyhow(&err);
+                            },
+                        );
                         return Err(err).with_context(|| {
                             format!("Failed to generate proof for the block {block_number}")
                         });
                     }
                     OnFailure::Continue => {
+                        sentry::with_scope(
+                            |scope| {
+                                scope.set_level(Some(sentry::Level::Error));
+                                scope.set_tag("mode", "gpu_prove");
+                                scope.set_tag("block_number", block_number.to_string());
+                            },
+                            || {
+                                sentry_anyhow::capture_anyhow(&err);
+                            },
+                        );
                         tracing::error!(
                             "Failed to generate proof for the block {block_number}: {err}"
                         );

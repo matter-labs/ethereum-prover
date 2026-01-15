@@ -59,6 +59,10 @@ pub struct EthProverConfig {
     /// EthProofs cluster ID.
     #[config(default_t = None)]
     pub ethproofs_cluster_id: Option<u64>,
+
+    /// Sentry DSN for error reporting.
+    #[config(default_t = None)]
+    pub sentry_dsn: Option<SecretString>,
 }
 
 impl EthProverConfig {

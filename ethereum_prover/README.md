@@ -70,6 +70,7 @@ All options below can be set in YAML under `eth_prover:` or via environment vari
 - `rpc_url` (env: `eth_prover_rpc_url`) — sensitive
 - `ethproofs_token` (env: `eth_prover_ethproofs_token`) — sensitive
 - `ethproofs_cluster_id` (env: `eth_prover_ethproofs_cluster_id`) — sensitive
+- `sentry_dsn` (env: `eth_prover_sentry_dsn`) — sensitive, enables error reporting
 
 Reusable configs live in `ethereum_prover/configs/`:
 - `ethproofs_prod.yaml`: production EthProofs submission defaults
