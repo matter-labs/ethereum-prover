@@ -16,6 +16,7 @@ pub mod config;
 
 pub(crate) mod cache;
 pub(crate) mod clients;
+pub mod metrics;
 pub mod prover;
 pub(crate) mod tasks;
 pub(crate) mod types;

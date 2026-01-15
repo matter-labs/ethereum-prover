@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::time::Duration;
 
+use crate::metrics::METRICS;
 const ETHPROOFS_STAGING_URL: &str = "https://staging--ethproofs.netlify.app/api/v0/";
 const ETHPROOFS_PRODUCTION_URL: &str = "https://ethproofs.netlify.app/api/v0/";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
@@ -92,6 +93,7 @@ impl EthproofsClient {
         payload: &T,
         context: &'static str,
     ) -> anyhow::Result<()> {
+        let latency = METRICS.ethproofs_request_duration_seconds.start();
         for attempt in 1..=MAX_ATTEMPTS {
             let response = self
                 .client
@@ -105,6 +107,8 @@ impl EthproofsClient {
                 Ok(response) => {
                     let status = response.status();
                     if status.is_success() {
+                        METRICS.ethproofs_request_success_total.inc();
+                        latency.observe();
                         return Ok(());
                     }
                     if should_retry_status(status) && attempt < MAX_ATTEMPTS {
@@ -115,6 +119,8 @@ impl EthproofsClient {
                             MAX_ATTEMPTS
                         );
                     } else {
+                        METRICS.ethproofs_request_failure_total.inc();
+                        latency.observe();
                         return Err(anyhow::anyhow!(
                             "{context}: request failed with status {status}"
                         ));
@@ -129,6 +135,8 @@ impl EthproofsClient {
                             MAX_ATTEMPTS
                         );
                     } else {
+                        METRICS.ethproofs_request_failure_total.inc();
+                        latency.observe();
                         return Err(err).context(context);
                     }
                 }
@@ -138,6 +146,8 @@ impl EthproofsClient {
             tokio::time::sleep(Duration::from_millis(backoff_ms)).await;
         }
 
+        METRICS.ethproofs_request_failure_total.inc();
+        latency.observe();
         Err(anyhow::anyhow!("{context}: request failed after retries"))
     }
 }

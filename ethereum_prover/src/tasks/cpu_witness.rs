@@ -5,6 +5,7 @@ use url::Url;
 
 use crate::{
     CacheStorage,
+    metrics::{InflightGuard, METRICS},
     prover::{
         cpu_witness::{CpuWitnessGenerator, DebuggerTxCallback},
         oracle::build_oracle,
@@ -53,9 +54,13 @@ impl CpuWitnessTask {
                 witness.block_header.number
             );
             let block_number = witness.block_header.number;
+            let _inflight = InflightGuard::new(&METRICS.inflight_witness_tasks);
+            let latency = METRICS.witness_duration_seconds.start();
             match self.process_block(witness).await {
                 Ok(cpu_witness) => {
                     tracing::info!("Generated CPU witness for block {}", block_number);
+                    METRICS.witness_success_total.inc();
+                    latency.observe();
                     self.command_sender
                         .send(CalculationUpdate::WitnessCalculated {
                             block_number,
@@ -65,6 +70,8 @@ impl CpuWitnessTask {
                 }
                 Err(err) => match self.on_failure {
                     OnFailure::Exit => {
+                        METRICS.witness_failure_total.inc();
+                        latency.observe();
                         sentry::with_scope(
                             |scope| {
                                 scope.set_level(Some(sentry::Level::Error));
@@ -78,6 +85,8 @@ impl CpuWitnessTask {
                         });
                     }
                     OnFailure::Continue => {
+                        METRICS.witness_failure_total.inc();
+                        latency.observe();
                         sentry::with_scope(
                             |scope| {
                                 scope.set_level(Some(sentry::Level::Error));

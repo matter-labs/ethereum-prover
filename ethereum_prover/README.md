@@ -1,4 +1,4 @@
-﻿# ethereum_prover
+# ethereum_prover
 
 ## Purpose
 
@@ -71,6 +71,7 @@ All options below can be set in YAML under `eth_prover:` or via environment vari
 - `ethproofs_token` (env: `eth_prover_ethproofs_token`) — sensitive
 - `ethproofs_cluster_id` (env: `eth_prover_ethproofs_cluster_id`) — sensitive
 - `sentry_dsn` (env: `eth_prover_sentry_dsn`) — sensitive, enables error reporting
+- `prometheus_port` (env: `eth_prover_prometheus_port`) — enables Prometheus exporter
 
 Reusable configs live in `ethereum_prover/configs/`:
 - `ethproofs_prod.yaml`: production EthProofs submission defaults

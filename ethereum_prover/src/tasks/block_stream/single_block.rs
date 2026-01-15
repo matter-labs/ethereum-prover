@@ -2,6 +2,7 @@ use alloy::providers::{DynProvider, Provider};
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 use url::Url;
 
+use crate::metrics::METRICS;
 use crate::{CacheStorage, prover::types::EthBlockInput, types::CachePolicy};
 
 #[derive(Debug)]
@@ -67,6 +68,8 @@ impl SingleBlockStream {
             "Sending block input for block {}",
             input.block_header.number
         );
+        METRICS.blocks_received_total.inc();
+        METRICS.last_processed_block.set(input.block_header.number);
         self.sender.send(input).await?;
         // We're sending single block only, so we can close the sender here.
         Ok(())

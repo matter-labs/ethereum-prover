@@ -63,6 +63,10 @@ pub struct EthProverConfig {
     /// Sentry DSN for error reporting.
     #[config(default_t = None)]
     pub sentry_dsn: Option<SecretString>,
+
+    /// Prometheus exporter port.
+    #[config(default_t = None)]
+    pub prometheus_port: Option<u16>,
 }
 
 impl EthProverConfig {

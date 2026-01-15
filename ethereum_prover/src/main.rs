@@ -3,6 +3,7 @@ use clap::Parser;
 use ethereum_prover::{
     Runner,
     config::{Cli, EthProverConfig},
+    metrics,
 };
 use smart_config::value::ExposeSecret;
 use tracing_subscriber::EnvFilter;
@@ -21,6 +22,13 @@ async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let config = EthProverConfig::load(&cli.config).context("failed to load config")?;
     let _sentry_guard = init_sentry(&config);
+    if let Some(port) = config.prometheus_port {
+        tokio::spawn(async move {
+            if let Err(err) = metrics::run_prometheus_exporter(port).await {
+                tracing::error!("Prometheus exporter failed: {err}");
+            }
+        });
+    }
 
     let runner = Runner::new();
     runner.run(cli, config).await

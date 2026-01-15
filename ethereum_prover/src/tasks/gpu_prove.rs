@@ -1,4 +1,5 @@
 use crate::{
+    metrics::{InflightGuard, METRICS},
     prover::{gpu_prover::ProofResult, oracle::build_oracle, types::EthBlockInput},
     tasks::CalculationUpdate,
     types::OnFailure,
@@ -41,6 +42,8 @@ impl GpuProveTask {
                 witness.block_header.number
             );
             let block_number = witness.block_header.number;
+            let _inflight = InflightGuard::new(&METRICS.inflight_proof_tasks);
+            let latency = METRICS.proof_duration_seconds.start();
             self.command_sender
                 .send(CalculationUpdate::ProofQueued { block_number })
                 .await
@@ -53,6 +56,8 @@ impl GpuProveTask {
             match self.process_block(witness).await {
                 Ok(proof_result) => {
                     tracing::info!("Generated GPU proof for block {}", block_number);
+                    METRICS.proof_success_total.inc();
+                    latency.observe();
                     self.command_sender
                         .send(CalculationUpdate::ProofProvided {
                             block_number,
@@ -63,6 +68,8 @@ impl GpuProveTask {
                 }
                 Err(err) => match self.on_failure {
                     OnFailure::Exit => {
+                        METRICS.proof_failure_total.inc();
+                        latency.observe();
                         sentry::with_scope(
                             |scope| {
                                 scope.set_level(Some(sentry::Level::Error));
@@ -78,6 +85,8 @@ impl GpuProveTask {
                         });
                     }
                     OnFailure::Continue => {
+                        METRICS.proof_failure_total.inc();
+                        latency.observe();
                         sentry::with_scope(
                             |scope| {
                                 scope.set_level(Some(sentry::Level::Error));

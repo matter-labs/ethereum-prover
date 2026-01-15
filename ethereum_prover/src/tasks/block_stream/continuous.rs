@@ -4,6 +4,7 @@ use alloy::providers::{DynProvider, Provider};
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 use url::Url;
 
+use crate::metrics::METRICS;
 use crate::{CacheStorage, prover::types::EthBlockInput, types::CachePolicy};
 
 const POLL_INTERVAL_SECS: u64 = 2;
@@ -62,6 +63,8 @@ impl ContinuousBlockStream {
                 super::fetch_input(&self.provider, selected, self.cache_policy, &self.cache)
                     .await?;
             tracing::info!("Fetched block input for block {}", selected);
+            METRICS.blocks_received_total.inc();
+            METRICS.last_processed_block.set(selected);
             self.sender.send(eth_block_input).await?;
         }
     }
