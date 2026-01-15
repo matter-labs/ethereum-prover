@@ -72,3 +72,43 @@ impl SingleBlockStream {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::SingleBlockStream;
+    use crate::cache::CacheStorage;
+    use crate::types::CachePolicy;
+    use alloy::rpc::types::{Block, Header};
+
+    #[tokio::test]
+    async fn single_block_stream_reads_from_cache() {
+        let temp_dir = tempfile::tempdir().expect("create temp dir");
+        let cache = CacheStorage::new(temp_dir.path()).expect("create cache");
+        let block_number = 42_u64;
+
+        let block = Block {
+            header: Header {
+                inner: alloy::consensus::Header {
+                    number: block_number,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            uncles: Vec::new(),
+            transactions: alloy::rpc::types::BlockTransactions::Hashes(Vec::new()),
+            withdrawals: None,
+        };
+        let witness = alloy::rpc::types::debug::ExecutionWitness::default();
+        cache
+            .cache_block(block_number, &block, &witness)
+            .expect("cache block");
+
+        let (stream, mut receiver) =
+            SingleBlockStream::new(Some(block_number), None, cache, CachePolicy::Off);
+        let task = tokio::spawn(stream.run());
+
+        let input = receiver.recv().await.expect("receive input");
+        assert_eq!(input.block_header.number, block_number);
+        task.await.expect("stream task").expect("stream ok");
+    }
+}

@@ -19,7 +19,7 @@ use zk_ee::system::tracer::NopTracer;
 use crate::CacheStorage;
 
 #[derive(Debug, Clone)]
-pub(crate) struct CpuWitnessGenerator {
+pub struct CpuWitnessGenerator {
     app_bin_path: PathBuf,
 }
 
@@ -85,7 +85,7 @@ impl CpuWitnessGenerator {
 }
 
 #[derive(Clone)]
-pub(crate) struct DebuggerTxCallback {
+pub struct DebuggerTxCallback {
     block_number: u64,
     txs: VecDeque<Transaction>,
     provider: DynProvider,

@@ -22,7 +22,7 @@ use zk_ee::utils::Bytes32;
 
 use crate::prover::types::EthBlockInput;
 
-pub(crate) fn build_oracle(input: EthBlockInput) -> anyhow::Result<ZkEENonDeterminismSource> {
+pub fn build_oracle(input: EthBlockInput) -> anyhow::Result<ZkEENonDeterminismSource> {
     let mut headers: Vec<Header> = input
         .execution_witness
         .headers

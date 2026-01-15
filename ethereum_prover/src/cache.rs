@@ -6,7 +6,7 @@ use alloy::{
 };
 
 #[derive(Debug, Clone)]
-pub(super) struct CacheStorage {
+pub struct CacheStorage {
     root: PathBuf,
 }
 

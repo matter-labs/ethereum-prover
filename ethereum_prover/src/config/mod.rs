@@ -121,3 +121,31 @@ impl EthProverConfig {
         Ok(config)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::EthProverConfig;
+    use crate::types::{CachePolicy, Mode, OnFailure};
+
+    #[test]
+    fn load_config_from_yaml() {
+        let temp_dir = tempfile::tempdir().expect("create temp dir");
+        let config_path = temp_dir.path().join("config.yaml");
+        let contents = r#"
+eth_prover:
+  mode: cpu_witness
+  cache_policy: off
+  block_mod: 10
+  prover_id: 2
+  on_failure: exit
+"#;
+        std::fs::write(&config_path, contents).expect("write config");
+
+        let config = EthProverConfig::load(&Some(config_path)).expect("load config");
+        assert!(matches!(config.mode, Mode::CpuWitness));
+        assert!(matches!(config.cache_policy, CachePolicy::Off));
+        assert_eq!(config.block_mod, 10);
+        assert_eq!(config.prover_id, 2);
+        assert!(matches!(config.on_failure, OnFailure::Exit));
+    }
+}

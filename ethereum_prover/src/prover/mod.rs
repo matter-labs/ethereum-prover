@@ -3,7 +3,7 @@
 //! and the interfaces ZKsync OS provides, making it easier to use ZKsync OS
 //! functionality in the context of the Ethereum prover.
 
-pub(crate) mod cpu_witness;
-pub(crate) mod gpu_prover;
-pub(crate) mod oracle;
-pub(crate) mod types;
+pub mod cpu_witness;
+pub mod gpu_prover;
+pub mod oracle;
+pub mod types;

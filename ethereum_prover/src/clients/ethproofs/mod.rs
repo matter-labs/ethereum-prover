@@ -173,3 +173,24 @@ fn should_retry_status(status: StatusCode) -> bool {
 fn should_retry_error(err: &reqwest::Error) -> bool {
     err.is_timeout() || err.is_connect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::encode_proof;
+    use base64::Engine as _;
+    use flate2::read::GzDecoder;
+    use std::io::Read;
+
+    #[test]
+    fn encode_proof_roundtrips() {
+        let input = b"proof-bytes-test-vector";
+        let encoded = encode_proof(input).expect("encode proof");
+        let decoded = base64::engine::general_purpose::STANDARD
+            .decode(encoded)
+            .expect("decode base64");
+        let mut decoder = GzDecoder::new(decoded.as_slice());
+        let mut output = Vec::new();
+        decoder.read_to_end(&mut output).expect("decompress");
+        assert_eq!(output, input);
+    }
+}
