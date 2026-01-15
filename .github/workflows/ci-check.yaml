@@ -81,10 +81,10 @@ jobs:
         run: cargo fmt -p ethereum_prover -- --check
 
       - name: Clippy
-        run: cargo clippy -p ethereum_prover -- -D warnings
+        run: cargo clippy -p ethereum_prover --no-deps -- -D warnings
 
       - name: Tests (nextest)
-        run: RUST_MIN_STACK=267108864 cargo nextest run -p ethereum_prover
+        run: RUST_MIN_STACK=267108864 cargo nextest run -p ethereum_prover --release
 
   ####################################
   #  Build prover integration tests  #
@@ -141,7 +141,7 @@ jobs:
           BELLMAN_CUDA_DIR: ${{ github.workspace }}/bellman-cuda
         run: |
           RUST_MIN_STACK=267108864 cargo nextest archive --release -p ethereum_prover \
-            --test gpu_prover_from_fixture_block --archive-file ${PROVER_GPU_TESTS}.tar.zst
+            --test integration --archive-file ${PROVER_GPU_TESTS}.tar.zst
 
       - name: Upload tests
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f3 # v6.0.0
@@ -193,7 +193,7 @@ jobs:
           RUST_MIN_STACK: 267108864
         run: |
           ulimit -s 300000
-          RUN_GPU_TESTS=1 cargo nextest run -p ethereum_prover --test gpu_prover_from_fixture_block
+          RUN_GPU_TESTS=1 cargo nextest run -p ethereum_prover --test integration
 
   # Special job that allows some of the jobs to be skipped or failed
   # requiring others to be successful
