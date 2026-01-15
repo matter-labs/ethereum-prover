@@ -2823,6 +2823,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
+ "url",
  "zk_ee",
  "zksync_os_runner",
 ]

@@ -1,6 +1,7 @@
 use alloy::providers::DynProvider;
 use anyhow::Context as _;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
+use url::Url;
 
 use crate::{
     CacheStorage,
@@ -19,7 +20,7 @@ pub(crate) struct CpuWitnessTask {
     witness_receiver: Receiver<EthBlockInput>,
     command_sender: Sender<CalculationUpdate>,
     on_failure: OnFailure,
-    rpc_url: Option<String>,
+    rpc_url: Option<Url>,
     cache: CacheStorage,
 }
 
@@ -28,7 +29,7 @@ impl CpuWitnessTask {
         witness_generator: CpuWitnessGenerator,
         witness_receiver: Receiver<EthBlockInput>,
         on_failure: OnFailure,
-        rpc_url: Option<String>,
+        rpc_url: Option<Url>,
         cache: CacheStorage,
     ) -> (Self, Receiver<CalculationUpdate>) {
         let (command_sender, command_receiver) = channel(10);
@@ -108,7 +109,7 @@ impl CpuWitnessTask {
             Some(rpc_url) => {
                 tracing::warn!("Forward run failed, attempting to debug using RPC");
                 let oracle = build_oracle(witness.clone())?;
-                let provider = alloy::providers::builder().connect_http(rpc_url.parse().unwrap());
+                let provider = alloy::providers::builder().connect_http(rpc_url.clone());
                 let provider = DynProvider::new(provider);
 
                 let debugger = DebuggerTxCallback::new(
@@ -117,9 +118,13 @@ impl CpuWitnessTask {
                     provider,
                     self.cache.clone(),
                 );
-                let Ok(debugger) = self.witness_generator.debug(oracle, debugger).await else {
-                    panic!("Debugging failed unexpectedly");
-                };
+                let debugger = self
+                    .witness_generator
+                    .debug(oracle, debugger)
+                    .await
+                    .with_context(|| {
+                        format!("debugging failed for block {}", witness.block_header.number)
+                    })?;
                 tracing::info!(
                     "Debugging completed for block {}",
                     witness.block_header.number

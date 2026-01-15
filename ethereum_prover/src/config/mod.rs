@@ -1,3 +1,4 @@
+use anyhow::Context as _;
 use smart_config::{
     ConfigRepository, ConfigSchema, ConfigSources, DescribeConfig, DeserializeConfig, Environment,
     Yaml, de::Serde, value::SecretString,
@@ -76,29 +77,29 @@ impl EthProverConfig {
         // Load YAML config, if provided.
         if let Some(config_path) = config_path {
             let config_contents = std::fs::read_to_string(config_path)
-                .expect("Failed to read config file from provided path");
+                .with_context(|| format!("failed to read config file {}", config_path.display()))?;
             let filename = config_path
                 .file_name()
-                .expect("Not a file")
+                .context("config path does not refer to a file")?
                 .to_str()
-                .expect("Invalid filename");
+                .context("config filename is not valid UTF-8")?;
             let config_yaml = Yaml::new(filename, serde_yaml::from_str(&config_contents)?)?;
             config_sources.push(config_yaml);
         }
 
         // If `.env` file exists in the current directory, load it as an environment source.
-        if std::fs::exists(".env").expect("Failed to check .env existence") {
+        if std::fs::exists(".env").context("failed to check .env existence")? {
             let dotenv_contents = std::fs::read_to_string(".env")
-                .expect("Failed to read .env file from the current directory");
+                .context("failed to read .env file from the current directory")?;
 
-            let mut dotenv =
-                Environment::from_dotenv(".env", &dotenv_contents).expect("Failed to load .env");
+            let mut dotenv = Environment::from_dotenv(".env", &dotenv_contents)
+                .context("failed to load .env")?;
             // Enables JSON coercion - env variables with `__JSON` suffix can be used to force value
             // deserialization as JSON instead of plain string. This is useful to distinguish between "null"
             // and `null` (missing value). Usage example: `GENESIS_BRIDGEHUB_ADDRESS__JSON=null`
             dotenv
                 .coerce_json()
-                .expect("failed to coerce JSON envvar values");
+                .context("failed to coerce JSON envvar values from .env")?;
             config_sources.push(dotenv);
         }
 
@@ -107,15 +108,15 @@ impl EthProverConfig {
         // Enables JSON coercion - env variables with `__JSON` suffix can be used to force value
         // deserialization as JSON instead of plain string. This is useful to distinguish between "null"
         env.coerce_json()
-            .expect("failed to coerce JSON envvar values");
+            .context("failed to coerce JSON envvar values from environment")?;
         config_sources.push(env);
 
         let config_repo = ConfigRepository::new(&config_schema).with_all(config_sources);
         let config = config_repo
             .single::<Self>()
-            .expect("Failed to load general config")
+            .context("failed to load general config")?
             .parse()
-            .expect("Failed to parse general config");
+            .context("failed to parse general config")?;
 
         Ok(config)
     }

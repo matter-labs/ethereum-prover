@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use alloy::providers::{DynProvider, Provider};
 use tokio::sync::mpsc::{Receiver, Sender, channel};
+use url::Url;
 
 use crate::{CacheStorage, prover::types::EthBlockInput, types::CachePolicy};
 
@@ -19,7 +20,7 @@ pub struct ContinuousBlockStream {
 
 impl ContinuousBlockStream {
     pub fn new(
-        rpc_url: String,
+        rpc_url: Url,
         prover_id: u64,
         block_mod: u64,
         cache: CacheStorage,
@@ -27,8 +28,7 @@ impl ContinuousBlockStream {
     ) -> (Self, Receiver<EthBlockInput>) {
         let (sender, receiver) = channel(10);
 
-        let provider = alloy::providers::ProviderBuilder::new()
-            .connect_http(rpc_url.parse().expect("Incorrect RPC URL"));
+        let provider = alloy::providers::ProviderBuilder::new().connect_http(rpc_url);
         let provider = DynProvider::new(provider);
 
         (

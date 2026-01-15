@@ -43,6 +43,7 @@ serde_yaml = "0.9.34"
 futures = "0.3.31"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt"] }
+url = "2"
 
 [dev-dependencies]
 tempfile = "3"

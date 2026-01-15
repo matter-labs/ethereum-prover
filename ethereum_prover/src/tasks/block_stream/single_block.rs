@@ -1,12 +1,13 @@
 use alloy::providers::{DynProvider, Provider};
 use tokio::sync::mpsc::{Receiver, Sender, channel};
+use url::Url;
 
 use crate::{CacheStorage, prover::types::EthBlockInput, types::CachePolicy};
 
 #[derive(Debug)]
 pub struct SingleBlockStream {
     block_number: Option<u64>,
-    rpc_url: Option<String>,
+    rpc_url: Option<Url>,
     cache: CacheStorage,
     cache_policy: CachePolicy,
     sender: Sender<EthBlockInput>,
@@ -15,7 +16,7 @@ pub struct SingleBlockStream {
 impl SingleBlockStream {
     pub fn new(
         block_number: Option<u64>,
-        rpc_url: Option<String>,
+        rpc_url: Option<Url>,
         cache: CacheStorage,
         cache_policy: CachePolicy,
     ) -> (Self, Receiver<EthBlockInput>) {
@@ -39,10 +40,9 @@ impl SingleBlockStream {
             && self.cache.has_cached_block(block_number)
         {
             tracing::info!("Loading block {block_number} from cache");
-            let (block, witness) = self
-                .cache
-                .load_block(block_number)?
-                .expect("Must be present");
+            let Some((block, witness)) = self.cache.load_block(block_number)? else {
+                anyhow::bail!("cache indicated block {block_number} exists, but contents missing");
+            };
             EthBlockInput::new(block, witness)
         } else {
             tracing::info!("Block number is unknown or not cached, fetching from RPC");
@@ -50,8 +50,7 @@ impl SingleBlockStream {
                 anyhow::bail!("Block number not cached and no RPC URL provided");
             };
 
-            let provider = alloy::providers::ProviderBuilder::new()
-                .connect_http(rpc_url.parse().expect("Incorrect RPC URL"));
+            let provider = alloy::providers::ProviderBuilder::new().connect_http(rpc_url);
             let provider = DynProvider::new(provider);
 
             let block_number = match self.block_number {

@@ -125,10 +125,13 @@ impl TxResultCallback for DebuggerTxCallback {
         };
 
         let Ok(tx_execution_result) = tx_execution_result else {
+            let Err(err) = tx_execution_result else {
+                return;
+            };
             tracing::error!(
                 "Transaction {:?} was considered invalid: {:?}",
                 executed_tx.inner.tx_hash(),
-                tx_execution_result.err().unwrap()
+                err
             );
             return;
         };
@@ -141,14 +144,27 @@ impl TxResultCallback for DebuggerTxCallback {
         {
             receipt
         } else {
-            let receipt = rt_handle
-                .block_on(async { self.provider.get_transaction_receipt(*tx_hash).await })
-                .expect("Failed to get transaction receipt")
-                .expect("Transaction receipt not found");
-            let _ = self
-                .cache
-                .save_receipt(self.block_number, receipt.clone())
-                .inspect_err(|err| tracing::error!("Failed to save cache entry: {err}"));
+            let receipt_result =
+                rt_handle.block_on(async { self.provider.get_transaction_receipt(*tx_hash).await });
+            let receipt = match receipt_result {
+                Ok(Some(receipt)) => receipt,
+                Ok(None) => {
+                    tracing::error!("Transaction receipt not found for {:?}", tx_hash);
+                    return;
+                }
+                Err(err) => {
+                    tracing::error!(
+                        "Failed to get transaction receipt for {:?}: {}",
+                        tx_hash,
+                        err
+                    );
+                    return;
+                }
+            };
+
+            if let Err(err) = self.cache.save_receipt(self.block_number, receipt.clone()) {
+                tracing::error!("Failed to save cache entry: {err}");
+            }
 
             receipt
         };

@@ -1,6 +1,8 @@
 #![feature(allocator_api)]
 
+use anyhow::Context as _;
 use smart_config::value::ExposeSecret;
+use url::Url;
 
 use crate::{
     cache::CacheStorage,
@@ -29,17 +31,23 @@ impl Runner {
     pub async fn run(self, cli: Cli, config: EthProverConfig) -> anyhow::Result<()> {
         let mut join_set = tokio::task::JoinSet::new();
 
-        let cache_storage = CacheStorage::new(".cache");
+        let cache_storage = CacheStorage::new(".cache").context("failed to initialize cache")?;
+        let rpc_url = config
+            .rpc_url
+            .clone()
+            .map(|u| u.expose_secret().to_string())
+            .map(|u| u.parse::<Url>().context("invalid RPC URL"))
+            .transpose()?;
 
         let (block_stream_receiver, should_create_cache_manager) = match cli.command {
             Command::Run => {
-                let Some(rpc_url) = config.rpc_url.clone() else {
+                let Some(rpc_url) = rpc_url.clone() else {
                     anyhow::bail!("RPC URL is required for continuous mode");
                 };
 
                 // Create and run continuous block stream
                 let (stream, receiver) = tasks::block_stream::ContinuousBlockStream::new(
-                    rpc_url.expose_secret().to_string(),
+                    rpc_url,
                     config.prover_id,
                     config.block_mod,
                     cache_storage.clone(),
@@ -51,10 +59,7 @@ impl Runner {
             Command::Block { block_number } => {
                 let (stream, receiver) = tasks::block_stream::SingleBlockStream::new(
                     block_number,
-                    config
-                        .rpc_url
-                        .clone()
-                        .map(|u| u.expose_secret().to_string()),
+                    rpc_url.clone(),
                     cache_storage.clone(),
                     config.cache_policy,
                 );
@@ -71,10 +76,7 @@ impl Runner {
                     cpu_witness_generator,
                     block_stream_receiver,
                     config.on_failure,
-                    config
-                        .rpc_url
-                        .clone()
-                        .map(|u| u.expose_secret().to_string()),
+                    rpc_url.clone(),
                     cache_storage.clone(),
                 );
                 join_set.spawn(task.run());
@@ -84,10 +86,10 @@ impl Runner {
                 // TODO: support worker threads? Though it's likely not needed anytime soon.
                 let app_bin_path = config.app_bin_path.clone();
                 let gpu_prover = tokio::task::spawn_blocking(move || {
-                    Prover::new(app_bin_path.as_path(), None).expect("Cannot create prover")
+                    Prover::new(app_bin_path.as_path(), None).context("failed to create prover")
                 })
                 .await
-                .expect("Prover creation task panicked");
+                .context("prover creation task panicked")??;
 
                 let (task, command_receiver) = tasks::gpu_prove::GpuProveTask::new(
                     gpu_prover,

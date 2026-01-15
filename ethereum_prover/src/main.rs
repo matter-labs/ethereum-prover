@@ -1,3 +1,4 @@
+use anyhow::Context as _;
 use clap::Parser;
 use ethereum_prover::{
     Runner,
@@ -12,12 +13,12 @@ async fn main() -> anyhow::Result<()> {
             EnvFilter::builder()
                 .with_default_directive("ethereum_prover=INFO".parse().unwrap())
                 .from_env()
-                .unwrap(),
+                .context("failed to load log filter from env")?,
         )
         .init();
 
     let cli = Cli::parse();
-    let config = EthProverConfig::load(&cli.config).expect("Failed to load config");
+    let config = EthProverConfig::load(&cli.config).context("failed to load config")?;
 
     let runner = Runner::new();
     runner.run(cli, config).await

@@ -19,11 +19,10 @@ struct BlockCachePaths {
 }
 
 impl CacheStorage {
-    pub fn new(root: impl Into<PathBuf>) -> Self {
+    pub fn new(root: impl Into<PathBuf>) -> anyhow::Result<Self> {
         let this = Self { root: root.into() };
-        this.ensure_root()
-            .expect("Failed to create cache root directory");
-        this
+        this.ensure_root()?;
+        Ok(this)
     }
 
     fn ensure_root(&self) -> anyhow::Result<()> {
@@ -165,7 +164,7 @@ mod tests {
     #[test]
     fn cache_roundtrips_block_and_execution_witness() {
         let dir = tempdir().expect("create tempdir");
-        let cache = CacheStorage::new(dir.path());
+        let cache = CacheStorage::new(dir.path()).expect("create cache");
         let block_number = 123_u64;
 
         let block = RpcBlock {

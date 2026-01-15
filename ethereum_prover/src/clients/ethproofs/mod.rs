@@ -1,7 +1,7 @@
 use anyhow::Context;
 use base64::Engine;
-use flate2::write::GzEncoder;
 use flate2::Compression;
+use flate2::write::GzEncoder;
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 
