@@ -14,8 +14,6 @@ RUST_MIN_STACK=267108864 cargo run --release -- --config configs/local_debug.yam
 RUST_MIN_STACK=267108864 cargo run --release -- --config configs/local_debug.yaml run
 ```
 
-`RUST_MIN_STACK` is required since the code might have compile issue with default value.
-
 In a realistic scenario, to run the binary you need to:
 1. create `.env` file and set required configs there OR set environment variables directly (see below)
 2. choose one of the templates in the `configs` folder, edit it to match your preferences (see below)
@@ -25,6 +23,13 @@ Additionally, note that for EthProofs only the `gpu_prove` mode is relevant.
 `cpu_witness` mode is there only for debugging purposes, and it has a (very basic) automated debugger that would attempt
 to understand which transaction cause issues in terms of failure (it does so by comparing local execution results against
 transaction receipts fetched from L1).
+
+### Build Notes
+
+The project unconditionally builds the GPU prover, because keeping it behind the feature flag would complicate the development.
+To build the project without CUDA drivers installed, set `ZKSYNC_USE_CUDA_STUBS` environment variable to `true`.
+
+`RUST_MIN_STACK` is required since the code might have compile issue with default value.
 
 ## Configuration
 
