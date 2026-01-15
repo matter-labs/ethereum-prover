@@ -1,12 +1,18 @@
-use anyhow::Context;
+use anyhow::Context as _;
 use base64::Engine;
 use flate2::Compression;
 use flate2::write::GzEncoder;
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::io::Write;
+use std::time::Duration;
 
 const ETHPROOFS_STAGING_URL: &str = "https://staging--ethproofs.netlify.app/api/v0/";
 const ETHPROOFS_PRODUCTION_URL: &str = "https://ethproofs.netlify.app/api/v0/";
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+const MAX_ATTEMPTS: usize = 3;
+const BASE_BACKOFF_MS: u64 = 200;
 
 #[derive(Clone, Debug)]
 pub struct EthproofsClient {
@@ -23,11 +29,16 @@ impl EthproofsClient {
         } else {
             ETHPROOFS_PRODUCTION_URL.to_string()
         };
+        let client = reqwest::Client::builder()
+            .timeout(REQUEST_TIMEOUT)
+            .connect_timeout(CONNECT_TIMEOUT)
+            .build()
+            .expect("failed to build ethproofs http client");
         Self {
             auth_token,
             cluster_id,
             url,
-            client: reqwest::Client::new(),
+            client,
         }
     }
 
@@ -81,16 +92,53 @@ impl EthproofsClient {
         payload: &T,
         context: &'static str,
     ) -> anyhow::Result<()> {
-        self.client
-            .post(endpoint)
-            .bearer_auth(&self.auth_token)
-            .json(payload)
-            .send()
-            .await
-            .context(context)?
-            .error_for_status()
-            .context(context)?;
-        Ok(())
+        for attempt in 1..=MAX_ATTEMPTS {
+            let response = self
+                .client
+                .post(endpoint)
+                .bearer_auth(&self.auth_token)
+                .json(payload)
+                .send()
+                .await;
+
+            match response {
+                Ok(response) => {
+                    let status = response.status();
+                    if status.is_success() {
+                        return Ok(());
+                    }
+                    if should_retry_status(status) && attempt < MAX_ATTEMPTS {
+                        tracing::warn!(
+                            "ethproofs request failed with status {}, retrying (attempt {}/{})",
+                            status,
+                            attempt,
+                            MAX_ATTEMPTS
+                        );
+                    } else {
+                        return Err(anyhow::anyhow!(
+                            "{context}: request failed with status {status}"
+                        ));
+                    }
+                }
+                Err(err) => {
+                    if should_retry_error(&err) && attempt < MAX_ATTEMPTS {
+                        tracing::warn!(
+                            "ethproofs request error: {}, retrying (attempt {}/{})",
+                            err,
+                            attempt,
+                            MAX_ATTEMPTS
+                        );
+                    } else {
+                        return Err(err).context(context);
+                    }
+                }
+            }
+
+            let backoff_ms = BASE_BACKOFF_MS.saturating_mul(1 << (attempt - 1));
+            tokio::time::sleep(Duration::from_millis(backoff_ms)).await;
+        }
+
+        Err(anyhow::anyhow!("{context}: request failed after retries"))
     }
 }
 
@@ -116,4 +164,12 @@ fn encode_proof(proof_bytes: &[u8]) -> anyhow::Result<String> {
     let compressed = encoder.finish()?;
     let encoded = base64::engine::general_purpose::STANDARD.encode(compressed);
     Ok(encoded)
+}
+
+fn should_retry_status(status: StatusCode) -> bool {
+    status.is_server_error() || status == StatusCode::TOO_MANY_REQUESTS
+}
+
+fn should_retry_error(err: &reqwest::Error) -> bool {
+    err.is_timeout() || err.is_connect()
 }

@@ -45,12 +45,16 @@ impl EthProofsUploadTask {
             match command {
                 CalculationUpdate::ProofQueued { block_number } => {
                     tracing::info!("Marking block {block_number} as queued");
-                    self.client.queue_proof(block_number).await?;
+                    if let Err(err) = self.client.queue_proof(block_number).await {
+                        tracing::error!("Failed to mark block {block_number} as queued: {err}");
+                    }
                     tracing::info!("Block {block_number} marked as queued");
                 }
                 CalculationUpdate::ProofProving { block_number } => {
                     tracing::info!("Marking block {block_number} as proving");
-                    self.client.proving_proof(block_number).await?;
+                    if let Err(err) = self.client.proving_proof(block_number).await {
+                        tracing::error!("Failed to mark block {block_number} as proving: {err}");
+                    }
                     tracing::info!("Block {block_number} marked as proving");
                 }
                 CalculationUpdate::ProofProvided {
@@ -58,14 +62,18 @@ impl EthProofsUploadTask {
                     proof_result,
                 } => {
                     tracing::info!("Uploading proof for block {block_number}");
-                    self.client
+                    if let Err(err) = self
+                        .client
                         .send_proof(
                             block_number,
                             &proof_result.proof_bytes,
                             proof_result.proving_time_secs,
                             proof_result.cycles,
                         )
-                        .await?;
+                        .await
+                    {
+                        tracing::error!("Failed to upload proof for block {block_number}: {err}");
+                    }
                     tracing::info!("Uploaded proof for block {block_number}");
                 }
                 _ => {
