@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use alloy::providers::DynProvider;
 use alloy::providers::Provider;
 use alloy::rpc::types::Transaction;
+use anyhow::Context as _;
 use basic_bootloader::bootloader::BasicBootloader;
 use basic_bootloader::bootloader::config::BasicBootloaderForwardETHLikeConfig;
 use forward_system::run::InvalidTransaction;
@@ -68,7 +69,7 @@ impl CpuWitnessGenerator {
         oracle: ZkEENonDeterminismSource,
     ) -> anyhow::Result<Vec<u32>> {
         let app_bin_path = self.app_bin_path.clone();
-        tokio::task::spawn_blocking(move || {
+        match tokio::task::spawn_blocking(move || {
             let copy_source = ReadWitnessSource::new(oracle);
             let items = copy_source.get_read_items();
 
@@ -80,7 +81,18 @@ impl CpuWitnessGenerator {
             let witness = items.borrow().clone();
             Ok(witness)
         })
-        .await?
+        .await
+        {
+            Ok(Ok(witness)) => Ok(witness),
+            Ok(Err(err)) => Err(err).context("Failed to generate witness using zksync_os_runner"),
+            Err(err) => {
+                let panic_msg = crate::utils::extract_panic_message(err);
+                Err(anyhow::anyhow!(
+                    "Witness generation task panicked: {}",
+                    panic_msg
+                ))
+            }
+        }
     }
 }
 

@@ -55,7 +55,12 @@ impl GpuProveTask {
 
             match self.process_block(witness).await {
                 Ok(proof_result) => {
-                    tracing::info!("Generated GPU proof for block {}", block_number);
+                    tracing::info!(
+                        "Generated GPU proof for block {}. Number of cycles: {}, proving time: {}s",
+                        block_number,
+                        proof_result.cycles,
+                        proof_result.proving_time_secs
+                    );
                     METRICS.proof_success_total.inc();
                     latency.observe();
                     self.command_sender
@@ -66,48 +71,33 @@ impl GpuProveTask {
                         .await
                         .ok();
                 }
-                Err(err) => match self.on_failure {
-                    OnFailure::Exit => {
-                        METRICS.proof_failure_total.inc();
-                        latency.observe();
-                        sentry::with_scope(
-                            |scope| {
-                                scope.set_level(Some(sentry::Level::Error));
-                                scope.set_tag("mode", "gpu_prove");
-                                scope.set_tag("block_number", block_number.to_string());
-                            },
-                            || {
-                                sentry_anyhow::capture_anyhow(&err);
-                            },
-                        );
-                        return Err(err).with_context(|| {
-                            format!("Failed to generate proof for the block {block_number}")
-                        });
+                Err(err) => {
+                    METRICS.proof_failure_total.inc();
+                    latency.observe();
+                    sentry::with_scope(
+                        |scope| {
+                            scope.set_level(Some(sentry::Level::Error));
+                            scope.set_tag("mode", "gpu_prove");
+                            scope.set_tag("block_number", block_number.to_string());
+                        },
+                        || {
+                            sentry_anyhow::capture_anyhow(&err);
+                        },
+                    );
+                    match self.on_failure {
+                        OnFailure::Exit => {
+                            return Err(err).with_context(|| {
+                                format!("Failed to generate proof for the block {block_number}")
+                            });
+                        }
+                        OnFailure::Continue => {
+                            tracing::error!(
+                                "Failed to generate proof for the block {block_number}: {err}"
+                            );
+                            continue;
+                        }
                     }
-                    OnFailure::Continue => {
-                        METRICS.proof_failure_total.inc();
-                        latency.observe();
-                        sentry::with_scope(
-                            |scope| {
-                                scope.set_level(Some(sentry::Level::Error));
-                                scope.set_tag("mode", "gpu_prove");
-                                scope.set_tag("block_number", block_number.to_string());
-                            },
-                            || {
-                                sentry_anyhow::capture_anyhow(&err);
-                            },
-                        );
-                        tracing::error!(
-                            "Failed to generate proof for the block {block_number}: {err}"
-                        );
-                        // continue;
-                        // TODO: `continue` mode is not supported yet, as some of the panics are not unwind-safe.
-                        // TODO: On failure in the prover itself, we need to re-instantiate the prover.
-                        return Err(err).with_context(|| {
-                            format!("Failed to generate proof for the block {block_number}")
-                        });
-                    }
-                },
+                }
             }
         }
 

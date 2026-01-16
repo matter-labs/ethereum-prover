@@ -68,45 +68,31 @@ impl CpuWitnessTask {
                         })
                         .await?;
                 }
-                Err(err) => match self.on_failure {
-                    OnFailure::Exit => {
-                        METRICS.witness_failure_total.inc();
-                        latency.observe();
-                        sentry::with_scope(
-                            |scope| {
-                                scope.set_level(Some(sentry::Level::Error));
-                                scope.set_tag("mode", "cpu_witness");
-                                scope.set_tag("block_number", block_number.to_string());
-                            },
-                            || sentry_anyhow::capture_anyhow(&err),
-                        );
-                        return Err(err).with_context(|| {
-                            format!("Failed to generate witness for the block {block_number}")
-                        });
+                Err(err) => {
+                    METRICS.witness_failure_total.inc();
+                    latency.observe();
+                    sentry::with_scope(
+                        |scope| {
+                            scope.set_level(Some(sentry::Level::Error));
+                            scope.set_tag("mode", "cpu_witness");
+                            scope.set_tag("block_number", block_number.to_string());
+                        },
+                        || sentry_anyhow::capture_anyhow(&err),
+                    );
+                    match self.on_failure {
+                        OnFailure::Exit => {
+                            return Err(err).with_context(|| {
+                                format!("Failed to generate witness for the block {block_number}")
+                            });
+                        }
+                        OnFailure::Continue => {
+                            tracing::error!(
+                                "Failed to generate witness for the block {block_number}: {err}"
+                            );
+                            continue;
+                        }
                     }
-                    OnFailure::Continue => {
-                        METRICS.witness_failure_total.inc();
-                        latency.observe();
-                        sentry::with_scope(
-                            |scope| {
-                                scope.set_level(Some(sentry::Level::Error));
-                                scope.set_tag("mode", "cpu_witness");
-                                scope.set_tag("block_number", block_number.to_string());
-                            },
-                            || {
-                                sentry_anyhow::capture_anyhow(&err);
-                            },
-                        );
-                        tracing::error!(
-                            "Failed to generate witness for the block {block_number}: {err}"
-                        );
-                        // continue;
-                        // TODO: `continue` mode is not supported yet, as some of the panics are not unwind-safe.
-                        return Err(err).with_context(|| {
-                            format!("Failed to generate witness for the block {block_number}")
-                        });
-                    }
-                },
+                }
             }
 
             // We don't any commands as we're not generating proofs
