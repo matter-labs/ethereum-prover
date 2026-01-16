@@ -27,7 +27,8 @@ impl ContinuousBlockStream {
         cache: CacheStorage,
         cache_policy: CachePolicy,
     ) -> (Self, Receiver<EthBlockInput>) {
-        let (sender, receiver) = channel(10);
+        // Capacity of 1 ensures that we won't be too far behind in case proving takes more time than expected.
+        let (sender, receiver) = channel(1);
 
         let provider = alloy::providers::ProviderBuilder::new().connect_http(rpc_url);
         let provider = DynProvider::new(provider);
