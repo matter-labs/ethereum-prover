@@ -10,10 +10,16 @@ use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Enforce default log level.
+    if std::env::var("RUST_LOG").is_err() {
+        unsafe {
+            std::env::set_var("RUST_LOG", "zksync=INFO,ethereum_prover=INFO");
+        }
+    }
+
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::builder()
-                .with_default_directive("zksync=INFO,ethereum_prover=INFO".parse().unwrap())
                 .from_env()
                 .context("failed to load log filter from env")?,
         )
