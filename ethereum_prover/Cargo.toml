@@ -25,14 +25,16 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 toml = "0.8"
 thiserror = "1"
 
-# forward_system = { path = "../../zksync-os/forward_system", features = ["no_print", "pectra"] }
-# oracle_provider = { path = "../../zksync-os/oracle_provider" }
-# callable_oracles = { path = "../../zksync-os/callable_oracles" }
-# crypto = { path = "../../zksync-os/crypto" }
-# zk_ee = { path = "../../zksync-os/zk_ee" }
-# basic_system = { path = "../../zksync-os/basic_system" }
-# basic_bootloader = { path = "../../zksync-os/basic_bootloader" }
-# zksync_os_runner = { path = "../../zksync-os/zksync_os_runner" }
+# For local debugging: replace remote dependencies with local ones, init the submodule, and get convenient debugging experience.
+# DO NOT use local dependencies outside of debugging.
+# forward_system = { path = "../zksync-os/forward_system", features = ["no_print", "pectra"] }
+# oracle_provider = { path = "../zksync-os/oracle_provider" }
+# callable_oracles = { path = "../zksync-os/callable_oracles" }
+# crypto = { path = "../zksync-os/crypto" }
+# zk_ee = { path = "../zksync-os/zk_ee" }
+# basic_system = { path = "../zksync-os/basic_system" }
+# basic_bootloader = { path = "../zksync-os/basic_bootloader" }
+# zksync_os_runner = { path = "../zksync-os/zksync_os_runner" }
 
 forward_system = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka", features = ["no_print", "pectra"] }
 oracle_provider = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka" }

@@ -1,4 +1,4 @@
 Git Branch: popzxc/more-ethproofs-fusaka
-Git Commit: d1d8767a64afd19ba404b230b0e24f8fa66148f1
-Build Timestamp (UTC): 2026-01-14T12:20:24Z
+Git Commit: ef2f9f9442e4c52bb26fba04775b95b1634ea507
+Build Timestamp (UTC): 2026-01-16T10:04:53Z
 Repository Status: (clean)

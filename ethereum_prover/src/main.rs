@@ -13,7 +13,7 @@ async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::builder()
-                .with_default_directive("ethereum_prover=INFO".parse().unwrap())
+                .with_default_directive("INFO".parse().unwrap())
                 .from_env()
                 .context("failed to load log filter from env")?,
         )

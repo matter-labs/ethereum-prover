@@ -32,6 +32,7 @@ EOF
 cp ../zksync-os/tests/instances/eth_runner/recursion_unified_setup.bin ../artifacts/
 cp ../zksync-os/tests/instances/eth_runner/recursion_unified_layouts.bin ../artifacts/
 cp ../zksync-os/zksync_os/app.bin ../artifacts/
+cp ../zksync-os/zksync_os/app.text ../artifacts/
 
 generate_build_metadata
 echo "Artifacts copied successfully."

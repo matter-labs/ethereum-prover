@@ -6,6 +6,8 @@
 
 ## Running
 
+On a fresh Ubuntu machine (e.g. in `vast.ai`), you might need to run the [`ubuntu_setup` script](../scripts/ubuntu_setup.sh).
+
 ```sh
 # Run a single block
 RUST_MIN_STACK=267108864 cargo run --release -- --config configs/local_debug.yaml block 24073997
