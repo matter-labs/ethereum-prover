@@ -85,12 +85,14 @@ impl Runner {
             }
             Mode::GpuProve => {
                 // TODO: support worker threads? Though it's likely not needed anytime soon.
+                tracing::info!("Creating GPU prover");
                 let app_bin_path = config.app_bin_path.clone();
                 let gpu_prover = tokio::task::spawn_blocking(move || {
                     Prover::new(app_bin_path.as_path(), None).context("failed to create prover")
                 })
                 .await
                 .context("prover creation task panicked")??;
+                tracing::info!("GPU prover created");
 
                 let (task, command_receiver) = tasks::gpu_prove::GpuProveTask::new(
                     gpu_prover,
