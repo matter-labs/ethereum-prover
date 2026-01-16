@@ -5,8 +5,10 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 # Disabling `wasm-opt` makes the build faster, but the resulting wasm file is much larger.
-# [package.metadata.wasm-pack.profile.release]
-# wasm-opt = false
+# Uncommented now, because it takes too much time in CI -- dependency graph should be optimized,
+# so that it doesn't take forever. In case of new release requied, comment the lines below.
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
 
 [lib]
 crate-type = ["cdylib"]
