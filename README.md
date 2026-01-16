@@ -6,6 +6,7 @@ Airbender utilities for proving the Ethereum STF.
 
 See the corresponding project README.
 
+- [Ethereum STF prover implementation](./ethereum_prover/)
 - [TypeScript library for EthProofs Airbender proof verification](./proof_verifier_js/)
 
 ## License

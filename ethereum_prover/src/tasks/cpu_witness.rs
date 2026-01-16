@@ -100,7 +100,11 @@ impl CpuWitnessTask {
                         tracing::error!(
                             "Failed to generate witness for the block {block_number}: {err}"
                         );
-                        continue;
+                        // continue;
+                        // TODO: `continue` mode is not supported yet, as some of the panics are not unwind-safe.
+                        return Err(err).with_context(|| {
+                            format!("Failed to generate witness for the block {block_number}")
+                        });
                     }
                 },
             }

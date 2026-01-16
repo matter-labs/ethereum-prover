@@ -100,7 +100,12 @@ impl GpuProveTask {
                         tracing::error!(
                             "Failed to generate proof for the block {block_number}: {err}"
                         );
-                        continue;
+                        // continue;
+                        // TODO: `continue` mode is not supported yet, as some of the panics are not unwind-safe.
+                        // TODO: On failure in the prover itself, we need to re-instantiate the prover.
+                        return Err(err).with_context(|| {
+                            format!("Failed to generate proof for the block {block_number}")
+                        });
                     }
                 },
             }
