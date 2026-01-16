@@ -20,6 +20,7 @@ pub mod metrics;
 pub mod prover;
 pub(crate) mod tasks;
 pub(crate) mod types;
+pub(crate) mod utils;
 
 #[derive(Debug, Default)]
 pub struct Runner {}
