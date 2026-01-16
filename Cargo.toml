@@ -6,6 +6,10 @@ members = [
     "proof_verifier_js/wasm"
 ]
 
+exclude = [
+    "zksync-os"
+]
+
 [workspace.package]
 version = "0.1.0"
 edition = "2024"

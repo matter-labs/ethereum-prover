@@ -3,7 +3,7 @@
 set -e
 
 echo "Rebuilding RISC-V binary"
-cd zksync-os/zksync_os
+cd ../zksync-os/zksync_os
 ./dump_bin.sh --type pectra
 
 echo "Generating setup for RISC-V verifier"
