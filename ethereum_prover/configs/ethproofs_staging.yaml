@@ -8,3 +8,4 @@ eth_prover:
   block_mod: 10
   prover_id: 0
   on_failure: "continue"
+  prometheus_port: 9898

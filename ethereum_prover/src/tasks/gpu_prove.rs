@@ -43,7 +43,7 @@ impl GpuProveTask {
             );
             let block_number = witness.block_header.number;
             let _inflight = InflightGuard::new(&METRICS.inflight_proof_tasks);
-            let latency = METRICS.proof_duration_seconds.start();
+            let latency = METRICS.proof_duration.start();
             self.command_sender
                 .send(CalculationUpdate::ProofQueued { block_number })
                 .await

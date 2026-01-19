@@ -55,7 +55,7 @@ impl CpuWitnessTask {
             );
             let block_number = witness.block_header.number;
             let _inflight = InflightGuard::new(&METRICS.inflight_witness_tasks);
-            let latency = METRICS.witness_duration_seconds.start();
+            let latency = METRICS.witness_duration.start();
             match self.process_block(witness).await {
                 Ok(cpu_witness) => {
                     tracing::info!("Generated CPU witness for block {}", block_number);

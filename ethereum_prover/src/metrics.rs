@@ -12,18 +12,18 @@ pub struct ProverMetrics {
     pub witness_success_total: Counter<u64>,
     pub witness_failure_total: Counter<u64>,
     #[metrics(buckets = Buckets::LATENCIES, unit = Unit::Seconds)]
-    pub witness_duration_seconds: Histogram<Duration>,
+    pub witness_duration: Histogram<Duration>,
     pub inflight_witness_tasks: Gauge<u64>,
     pub proof_success_total: Counter<u64>,
     pub proof_failure_total: Counter<u64>,
     #[metrics(buckets = Buckets::LATENCIES, unit = Unit::Seconds)]
-    pub proof_duration_seconds: Histogram<Duration>,
+    pub proof_duration: Histogram<Duration>,
     pub inflight_proof_tasks: Gauge<u64>,
     pub last_processed_block: Gauge<u64>,
     pub ethproofs_request_success_total: Counter<u64>,
     pub ethproofs_request_failure_total: Counter<u64>,
     #[metrics(buckets = Buckets::LATENCIES, unit = Unit::Seconds)]
-    pub ethproofs_request_duration_seconds: Histogram<Duration>,
+    pub ethproofs_request_duration: Histogram<Duration>,
 }
 
 #[vise::register]
