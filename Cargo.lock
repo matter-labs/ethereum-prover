@@ -2889,6 +2889,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "smart-config",
+ "system_hooks",
  "tempfile",
  "thiserror 1.0.69",
  "tokio",
