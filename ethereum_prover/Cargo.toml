@@ -27,7 +27,7 @@ thiserror = "1"
 
 # For local debugging: replace remote dependencies with local ones, init the submodule, and get convenient debugging experience.
 # DO NOT use local dependencies outside of debugging.
-# forward_system = { path = "../zksync-os/forward_system", features = ["no_print", "pectra"] }
+# forward_system = { path = "../zksync-os/forward_system", features = ["no_print", "pectra" ] }
 # oracle_provider = { path = "../zksync-os/oracle_provider" }
 # callable_oracles = { path = "../zksync-os/callable_oracles" }
 # crypto = { path = "../zksync-os/crypto" }
@@ -35,6 +35,7 @@ thiserror = "1"
 # basic_system = { path = "../zksync-os/basic_system" }
 # basic_bootloader = { path = "../zksync-os/basic_bootloader" }
 # zksync_os_runner = { path = "../zksync-os/zksync_os_runner" }
+# system_hooks = { path = "../zksync-os/system_hooks", features = ["p256_precompile"] }
 
 forward_system = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka", features = ["no_print", "pectra"] }
 oracle_provider = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka" }
@@ -44,6 +45,7 @@ zk_ee = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/mor
 basic_system = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka" }
 basic_bootloader = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka" }
 zksync_os_runner = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka" }
+system_hooks = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka", features = ["p256_precompile"] }
 
 # execution_utils = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", default-features = false, optional = true }
 # risc_v_simulator = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", features = ["delegation"], optional = true }
