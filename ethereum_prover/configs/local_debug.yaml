@@ -7,5 +7,6 @@ eth_prover:
   ethproofs_submission: "off"
   block_mod: 1
   prover_id: 0
-  on_failure: "exit"
+  on_failure: "continue"
+  prometheus_port: 9898
 

@@ -1,0 +1,765 @@
+{
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 0,
+  "fiscalYearStartMonth": 0,
+  "schemaVersion": 41,
+  "templating": {
+    "list": [
+      {
+        "type": "query",
+        "name": "instance",
+        "skipUrlSync": false,
+        "multi": true,
+        "allowCustomValue": true,
+        "includeAll": true,
+        "auto": false,
+        "auto_min": "10s",
+        "auto_count": 30,
+        "label": "Instance",
+        "query": "label_values(ethereum_prover_last_processed_block, instance)",
+        "datasource": {
+          "uid": "PROMETHEUS_DS",
+          "type": "prometheus"
+        },
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "refresh": 2,
+        "sort": 1,
+        "allValue": ".*"
+      }
+    ]
+  },
+  "annotations": {},
+  "title": "Ethereum Prover",
+  "uid": "ethereum-prover",
+  "tags": [
+    "generated",
+    "ethereum-prover"
+  ],
+  "refresh": "10s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {
+    "hidden": false,
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "collapsed": false,
+      "id": 0,
+      "panels": [],
+      "title": "General metrics",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "h": 1,
+        "w": 24
+      }
+    },
+    {
+      "type": "timeseries",
+      "transparent": false,
+      "repeatDirection": "h",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "showPoints": "auto",
+            "drawStyle": "line",
+            "gradientMode": "none",
+            "spanNulls": false,
+            "axisBorderShow": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "title": "Last processed block (timeline)",
+      "targets": [
+        {
+          "expr": "ethereum_prover_last_processed_block{instance=~\"$instance\"}",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "transparent": false,
+      "repeatDirection": "h",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "locale",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "percentChangeColorMode": "standard",
+        "orientation": "auto"
+      },
+      "title": "Last processed block",
+      "targets": [
+        {
+          "expr": "ethereum_prover_last_processed_block{instance=~\"$instance\"}",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "collapsed": false,
+      "id": 0,
+      "panels": [],
+      "title": "Witnessing",
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "h": 1,
+        "w": 24
+      }
+    },
+    {
+      "type": "timeseries",
+      "transparent": false,
+      "repeatDirection": "h",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "showPoints": "auto",
+            "drawStyle": "line",
+            "gradientMode": "none",
+            "spanNulls": false,
+            "axisBorderShow": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "title": "Witness duration (p50/p95/p99)",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(ethereum_prover_witness_duration_seconds_bucket{instance=~\"$instance\"}[5m])) by (le, instance))",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "p50 {{instance}}"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ethereum_prover_witness_duration_seconds_bucket{instance=~\"$instance\"}[5m])) by (le, instance))",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "p95 {{instance}}"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(ethereum_prover_witness_duration_seconds_bucket{instance=~\"$instance\"}[5m])) by (le, instance))",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "p99 {{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "transparent": false,
+      "repeatDirection": "h",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "showPoints": "auto",
+            "drawStyle": "line",
+            "gradientMode": "none",
+            "spanNulls": false,
+            "axisBorderShow": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "title": "Witness success/failure (5m count)",
+      "targets": [
+        {
+          "expr": "increase(ethereum_prover_witness_success_total{instance=~\"$instance\"}[5m])",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "success {{instance}}"
+        },
+        {
+          "expr": "increase(ethereum_prover_witness_failure_total{instance=~\"$instance\"}[5m])",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "failure {{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "transparent": false,
+      "repeatDirection": "h",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "percentChangeColorMode": "standard",
+        "orientation": "auto"
+      },
+      "title": "Inflight witness tasks",
+      "targets": [
+        {
+          "expr": "ethereum_prover_inflight_witness_tasks{instance=~\"$instance\"}",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "collapsed": false,
+      "id": 0,
+      "panels": [],
+      "title": "Proving",
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "h": 1,
+        "w": 24
+      }
+    },
+    {
+      "type": "timeseries",
+      "transparent": false,
+      "repeatDirection": "h",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 19
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "showPoints": "auto",
+            "drawStyle": "line",
+            "gradientMode": "none",
+            "spanNulls": false,
+            "axisBorderShow": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "title": "Proof duration (p50/p95/p99)",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(ethereum_prover_proof_duration_seconds_bucket{instance=~\"$instance\"}[5m])) by (le, instance))",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "p50 {{instance}}"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ethereum_prover_proof_duration_seconds_bucket{instance=~\"$instance\"}[5m])) by (le, instance))",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "p95 {{instance}}"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(ethereum_prover_proof_duration_seconds_bucket{instance=~\"$instance\"}[5m])) by (le, instance))",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "p99 {{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "transparent": false,
+      "repeatDirection": "h",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 19
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "showPoints": "auto",
+            "drawStyle": "line",
+            "gradientMode": "none",
+            "spanNulls": false,
+            "axisBorderShow": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "title": "Proof success/failure (5m count)",
+      "targets": [
+        {
+          "expr": "increase(ethereum_prover_proof_success_total{instance=~\"$instance\"}[5m])",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "success {{instance}}"
+        },
+        {
+          "expr": "increase(ethereum_prover_proof_failure_total{instance=~\"$instance\"}[5m])",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "failure {{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "transparent": false,
+      "repeatDirection": "h",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 19
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "percentChangeColorMode": "standard",
+        "orientation": "auto"
+      },
+      "title": "Inflight proof tasks",
+      "targets": [
+        {
+          "expr": "ethereum_prover_inflight_proof_tasks{instance=~\"$instance\"}",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "collapsed": false,
+      "id": 0,
+      "panels": [],
+      "title": "EthProofs client",
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "h": 1,
+        "w": 24
+      }
+    },
+    {
+      "type": "timeseries",
+      "transparent": false,
+      "repeatDirection": "h",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "showPoints": "auto",
+            "drawStyle": "line",
+            "gradientMode": "none",
+            "spanNulls": false,
+            "axisBorderShow": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "title": "EthProofs request duration (p50/p95/p99)",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(ethereum_prover_ethproofs_request_duration_seconds_bucket{instance=~\"$instance\"}[5m])) by (le, instance))",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "p50 {{instance}}"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ethereum_prover_ethproofs_request_duration_seconds_bucket{instance=~\"$instance\"}[5m])) by (le, instance))",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "p95 {{instance}}"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(ethereum_prover_ethproofs_request_duration_seconds_bucket{instance=~\"$instance\"}[5m])) by (le, instance))",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "p99 {{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "transparent": false,
+      "repeatDirection": "h",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 28
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "showPoints": "auto",
+            "drawStyle": "line",
+            "gradientMode": "none",
+            "spanNulls": false,
+            "axisBorderShow": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "title": "EthProofs success/failure (5m count)",
+      "targets": [
+        {
+          "expr": "increase(ethereum_prover_ethproofs_request_success_total{instance=~\"$instance\"}[5m])",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "success {{instance}}"
+        },
+        {
+          "expr": "increase(ethereum_prover_ethproofs_request_failure_total{instance=~\"$instance\"}[5m])",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "failure {{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "transparent": false,
+      "repeatDirection": "h",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 28
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "percentChangeColorMode": "standard",
+        "orientation": "auto"
+      },
+      "title": "EthProofs failure ratio",
+      "targets": [
+        {
+          "expr": "sum(rate(ethereum_prover_ethproofs_request_failure_total{instance=~\"$instance\"}[5m])) by (instance) / sum(rate(ethereum_prover_ethproofs_request_success_total{instance=~\"$instance\"}[5m]) + rate(ethereum_prover_ethproofs_request_failure_total{instance=~\"$instance\"}[5m])) by (instance)",
+          "refId": "",
+          "datasource": {
+            "uid": "PROMETHEUS_DS",
+            "type": "prometheus"
+          },
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    }
+  ]
+}

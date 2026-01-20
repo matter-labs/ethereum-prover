@@ -93,7 +93,7 @@ impl EthproofsClient {
         payload: &T,
         context: &'static str,
     ) -> anyhow::Result<()> {
-        let latency = METRICS.ethproofs_request_duration_seconds.start();
+        let latency = METRICS.ethproofs_request_duration.start();
         for attempt in 1..=MAX_ATTEMPTS {
             let response = self
                 .client
