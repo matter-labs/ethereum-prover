@@ -27,7 +27,7 @@ thiserror = "1"
 
 # For local debugging: replace remote dependencies with local ones, init the submodule, and get convenient debugging experience.
 # DO NOT use local dependencies outside of debugging.
-# forward_system = { path = "../zksync-os/forward_system", features = ["no_print", "pectra", "unlimited_native", "evm-compatibility", "evm_refunds", "disable_system_contracts" ] }
+# forward_system = { path = "../zksync-os/forward_system", features = ["no_print", "pectra" ] }
 # oracle_provider = { path = "../zksync-os/oracle_provider" }
 # callable_oracles = { path = "../zksync-os/callable_oracles" }
 # crypto = { path = "../zksync-os/crypto" }

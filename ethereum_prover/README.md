@@ -4,6 +4,14 @@
 
 `ethereum_prover` is a pipeline-style binary that ingests Ethereum blocks and produces witnesses or GPU proofs, with optional submission to EthProofs.
 
+## HW requirements
+
+- The best CPU you can get (CPU often becomes a bottleneck).
+- At least one NVIDIA RTX 5090 or better (32GB VRAM required).
+- 64GB RAM (for a single GPU).
+
+In case of multi-GPU setup, the prover will automatically detect and utilize all the available suitable GPUs.
+
 ## Running
 
 On a fresh Ubuntu machine (e.g. in `vast.ai`), you might need to run the [`ubuntu_setup` script](../scripts/ubuntu_setup.sh).
@@ -29,7 +37,8 @@ transaction receipts fetched from L1).
 ### Build Notes
 
 The project unconditionally builds the GPU prover, because keeping it behind the feature flag would complicate the development.
-To build the project without CUDA drivers installed, set `ZKSYNC_USE_CUDA_STUBS` environment variable to `true`.
+To build the project without CUDA drivers installed, set `ZKSYNC_USE_CUDA_STUBS` environment variable to `true`. Do not do that
+in any kind of environment where the built binary can actually be run.
 
 `RUST_MIN_STACK` is required since the code might have compile issue with default value.
 
@@ -85,6 +94,13 @@ Reusable configs live in `ethereum_prover/configs/`:
 - Use `cargo nextest run -p ethereum_prover` for fast, reliable test runs.
 - GPU tests are opt-in: `RUN_GPU_TESTS=1 cargo nextest run -p ethereum_prover --test gpu_prover_fixture`
 - Prefer unit tests for new behavior; add integration tests in `ethereum_prover/tests/` only when needed.
+
+## Observability
+
+Optional Sentry integration is supported. Currently, it will only generate alerts for failed witness generations or proofs.
+Exported Prometheus metrics can be seen in [metrics.rs](src/metrics.rs).
+
+Sample Grafana dashboard for exported metrics is available in the [infra](../infra/) folder.
 
 ## License
 
