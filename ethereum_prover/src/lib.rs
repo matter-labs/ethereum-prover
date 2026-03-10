@@ -145,7 +145,11 @@ impl Runner {
         while let Some(result) = join_set.join_next().await {
             match result {
                 Ok(Ok(())) => {
-                    tracing::info!("Some of the tasks exited. Shutting down the runtime");
+                    if matches!(cli.command, Command::Run) {
+                        tracing::warn!(
+                            "A task finished unexpectedly in continuous mode. Shutting down the runtime"
+                        );
+                    }
                 }
                 Ok(Err(err)) => {
                     tracing::error!("Received a task error: {err}");
