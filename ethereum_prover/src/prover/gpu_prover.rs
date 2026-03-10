@@ -14,7 +14,7 @@ pub struct ProofResult {
 pub struct Prover {
     app_bin_path: PathBuf,
     worker_threads: Option<usize>,
-    inner: Arc<Mutex<execution_utils::unrolled_gpu::UnrolledProver>>,
+    inner: Arc<Mutex<Option<execution_utils::unrolled_gpu::UnrolledProver>>>,
 }
 
 impl std::fmt::Debug for Prover {
@@ -34,12 +34,12 @@ impl Prover {
         Ok(Self {
             app_bin_path: app_bin_path.to_path_buf(),
             worker_threads,
-            inner: Arc::new(Mutex::new(inner)),
+            inner: Arc::new(Mutex::new(Some(inner))),
         })
     }
 
     pub async fn prove(
-        &self,
+        &mut self,
         block_number: u64,
         oracle: ZkEENonDeterminismSource,
     ) -> anyhow::Result<ProofResult> {
@@ -49,22 +49,39 @@ impl Prover {
 
         let future_result = tokio::task::spawn_blocking(move || {
             let prover = inner.lock().unwrap();
-            prover.prove(block_number, oracle)
+            prover
+                .as_ref()
+                .expect("Prover not provided")
+                .prove(block_number, oracle)
         })
         .await;
         let (proof, cycles) = match future_result {
             Ok(result) => result,
             Err(err) => {
                 let panic_msg = crate::utils::extract_panic_message(err);
+                tracing::error!("Prover panicked for block {}: {}", block_number, panic_msg);
 
                 // If prover panics, it is not safe to use it again, since some of threads may be poisoned/dead.
                 // We need to re-instantiate it.
                 {
-                    let mut inner = self.inner.lock().unwrap();
-                    // If we cannot reinstantiate the prover for some reason, we cannot do much -- better to panic.
-                    *inner = create_unrolled_prover(self.app_bin_path.as_path(), self.worker_threads).expect(
-                        "failed to re-instantiate prover after panic; prover app binary path is invalid",
+                    // Ensure that we only have a single reference.
+                    let strong_count = Arc::strong_count(&self.inner);
+                    assert!(
+                        strong_count == 1,
+                        "Expected exactly one strong reference to the prover, but found {}",
+                        strong_count
                     );
+
+                    let mut inner = self.inner.lock().unwrap();
+                    let old_value = inner.take();
+                    tracing::info!("Dropping the existing (poisoned) prover instance");
+                    drop(old_value);
+
+                    tracing::info!("Re-creating a new prover instance to replace the poisoned one");
+                    // If we cannot reinstantiate the prover for some reason, we cannot do much -- better to panic.
+                    *inner = Some(create_unrolled_prover(self.app_bin_path.as_path(), self.worker_threads).expect(
+                        "failed to re-instantiate prover after panic; prover app binary path is invalid",
+                    ));
                 }
 
                 return Err(anyhow::anyhow!(

@@ -104,7 +104,7 @@ impl GpuProveTask {
         Ok(())
     }
 
-    async fn process_block(&self, witness: EthBlockInput) -> anyhow::Result<ProofResult> {
+    async fn process_block(&mut self, witness: EthBlockInput) -> anyhow::Result<ProofResult> {
         let block_number = witness.block_header.number;
         let oracle = build_oracle(witness)?;
 
