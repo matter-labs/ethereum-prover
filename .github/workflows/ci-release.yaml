@@ -150,27 +150,6 @@ jobs:
       - name: Publish to npm
         run: npm publish --access public --tag latest --provenance
 
-  upload-prover-runtime-bundle:
-    name: Upload prover runtime bundle to release
-    runs-on: ubuntu-latest
-    needs:
-      - release-prover-image
-    if: ${{ inputs.upload_prover_bundle }}
-    permissions:
-      contents: write
-    steps:
-      - name: Download runtime bundle
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
-        with:
-          name: ethereum-prover-runtime-bundle
-          path: dist
-
-      - name: Attach runtime bundle to release
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
-        with:
-          tag_name: ${{ inputs.tag }}
-          files: dist/*.tar.gz
-
   release-prover-image:
     name: Build prover Docker image
     runs-on: matterlabs-ci-runner-high-performance
@@ -178,7 +157,7 @@ jobs:
       - prepare-release
     if: ${{ inputs.push_docker_image || inputs.upload_prover_bundle }}
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - name: Checkout sources
@@ -213,11 +192,9 @@ jobs:
           tar -C release -czf "${ARCHIVE_NAME}" .
           echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> "${GITHUB_ENV}"
 
-      - name: Upload runtime bundle
+      - name: Attach runtime bundle to release
         if: ${{ inputs.upload_prover_bundle }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
-          name: ethereum-prover-runtime-bundle
-          path: ${{ env.ARCHIVE_NAME }}
-          if-no-files-found: error
-          retention-days: 1
+          tag_name: ${{ inputs.tag }}
+          files: ${{ env.ARCHIVE_NAME }}
