@@ -1,13 +1,12 @@
 name: ci-run-release-please
 
 # Give permissions to the release-please bot to open and update PRs
-# and commit to PRs the repository to update package.json
+# and commit version updates across the shared release files
 permissions:
   contents: write
   pull-requests: write
   id-token: write
   attestations: write
-  packages: write
   issues: write
 
 # Run the workflow on push to the main branch and manually
@@ -28,15 +27,18 @@ jobs:
       config: '.github/release-please/config.json' # Specify the path to the configuration file
       manifest: '.github/release-please/manifest.json' # Specify the path to the manifest file
       upgrade-dependencies: false # Do not upgrade workspace dependencies
-      update-cargo-lock: false
+      update-cargo-lock: true
       publish-to-crates-io: false
       notify-slack: false
 
-  # Trigger workflow to publish binaries
-  release-binaries:
-    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+  # Publish all release artifacts for the shared repo version.
+  release-artifacts:
+    if: ${{ always() && needs.release-please.outputs.releases_created == 'true' }}
     needs: release-please
     uses: ./.github/workflows/ci-release.yaml
     with:
       tag: ${{ needs.release-please.outputs.tag_name }}
+      skip_npm_publish: false
+      upload_prover_bundle: true
+      push_docker_image: true
     secrets: inherit

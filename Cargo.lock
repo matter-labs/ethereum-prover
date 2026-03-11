@@ -2863,7 +2863,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum_prover"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "alloy",
  "anyhow",
@@ -4798,7 +4798,7 @@ dependencies = [
 
 [[package]]
 name = "proof_verifier_wasm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bincode 2.0.1",
  "console_error_panic_hook",

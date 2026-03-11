@@ -1,0 +1,62 @@
+name: Docker build and release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag of an image to build.'
+        type: string
+        required: true
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'push' || github.ref != 'refs/heads/main' }}
+
+defaults:
+  run:
+    shell: 'bash -ex {0}'
+
+permissions:
+  packages: write
+  contents: read
+
+env:
+  DOCKER_IMAGE_NAME: ethereum-prover
+
+jobs:
+  build-image:
+    name: Build and push Docker image
+    runs-on: matterlabs-ci-runner-high-performance
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Validate manual tag
+        if: ${{ inputs.tag_name != '' }}
+        env:
+          TAG_NAME: ${{ inputs.tag_name }}
+        run: |
+          if [[ ! "${TAG_NAME}" =~ ^[A-Za-z0-9.-]+$ ]]; then
+            echo "Image tag '${TAG_NAME}' contains unsupported characters."
+            echo "Only alphanumeric characters, dots, and dashes are allowed."
+            exit 1
+          fi
+
+      - name: Build and push
+        uses: ./.github/actions/publish-docker-image
+        with:
+          image_name: ${{ env.DOCKER_IMAGE_NAME }}
+          dockerfile: docker/ethereum-prover/Dockerfile
+          tag: ${{ inputs.tag_name }}
+          publish_latest: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          publish_sha_tag: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
+          build_args: |
+            SCCACHE_GCS_BUCKET=matterlabs-infra-sccache-storage
+            SCCACHE_GCS_SERVICE_ACCOUNT=gha-ci-runners@matterlabs-infra.iam.gserviceaccount.com
+            SCCACHE_GCS_RW_MODE=READ_WRITE
+            RUSTC_WRAPPER=sccache

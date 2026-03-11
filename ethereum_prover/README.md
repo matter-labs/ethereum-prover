@@ -42,6 +42,26 @@ in any kind of environment where the built binary can actually be run.
 
 `RUST_MIN_STACK` is required since the code might have compile issue with default value.
 
+### Docker and release bundles
+
+The repository uses a shared release version for both the prover and verifier.
+The release pipeline publishes a CUDA-enabled image to `ghcr.io/<repo-owner>/ethereum-prover:<tag>`.
+Run it with NVIDIA Container Toolkit enabled, for example:
+
+```sh
+docker run --rm --gpus all \
+  ghcr.io/<repo-owner>/ethereum-prover:v0.1.1 \
+  --config configs/ethproofs_staging.yaml run
+```
+
+GitHub release bundles keep the same repo-style layout inside the archive:
+
+- `ethereum_prover/ethereum_prover` is the binary
+- `ethereum_prover/configs/` contains the sample configs
+- `artifacts/` contains `app.bin` and the recursion artifacts
+
+That layout is intentional. The bundled configs still refer to `../artifacts/app.bin`, so run the extracted binary from inside the bundled `ethereum_prover/` directory.
+
 ## Configuration
 
 There are three layers of configuration:
