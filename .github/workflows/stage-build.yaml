@@ -10,7 +10,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -29,7 +28,7 @@ env:
 
 jobs:
   build-image:
-    name: Build Docker image
+    name: Build and push Docker image
     runs-on: matterlabs-ci-runner-high-performance
     steps:
       - name: Checkout
@@ -51,12 +50,11 @@ jobs:
         with:
           image_name: ${{ env.DOCKER_IMAGE_NAME }}
           dockerfile: docker/ethereum-prover/Dockerfile
-          tag: ${{ inputs.tag_name || (github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number)) || '' }}
+          tag: ${{ inputs.tag_name }}
           publish_latest: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           publish_sha_tag: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           registry_username: ${{ github.actor }}
           registry_password: ${{ secrets.GITHUB_TOKEN }}
-          push: ${{ github.event_name != 'pull_request' }}
           build_args: |
             SCCACHE_GCS_BUCKET=matterlabs-infra-sccache-storage
             SCCACHE_GCS_SERVICE_ACCOUNT=gha-ci-runners@matterlabs-infra.iam.gserviceaccount.com
