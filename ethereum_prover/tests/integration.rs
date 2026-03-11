@@ -42,7 +42,7 @@ async fn gpu_prover_from_fixture_block() {
     common::init_tracing();
     let input = common::load_fixture_input("24073997");
     let oracle = build_oracle(input.clone()).expect("build oracle");
-    let prover = Prover::new(common::app_bin_path().as_path(), None).expect("create prover");
+    let mut prover = Prover::new(common::app_bin_path().as_path(), None).expect("create prover");
 
     let result = prover
         .prove(input.block_header.number, oracle)
