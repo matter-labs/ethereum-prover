@@ -49,7 +49,7 @@ system_hooks = { git = "https://github.com/matter-labs/zksync-os", branch = "pop
 
 # execution_utils = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", default-features = false, optional = true }
 # risc_v_simulator = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", features = ["delegation"], optional = true }
-execution_utils = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", default-features = false, features = ["prover", "gpu_prover"] }
+execution_utils = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", default-features = false, features = ["prover", "gpu_prover", "security_80"] }
 risc_v_simulator = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", features = ["delegation"] }
 smart-config = "0.4.0-pre.1"
 serde_yaml = "0.9.34"
