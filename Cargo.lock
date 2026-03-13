@@ -15,6 +15,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "add_sub_lui_auipc_mop_verifier"
+version = "0.1.0"
+source = "git+https://github.com/matter-labs/zksync-airbender?branch=dev#cef19b322a08ad0fc09c24cd0171eea4c9918a5d"
+dependencies = [
+ "field",
+ "unroll",
+ "verifier_common",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1776,6 +1786,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bigint_with_control_verifier"
+version = "0.1.0"
+source = "git+https://github.com/matter-labs/zksync-airbender?branch=dev#cef19b322a08ad0fc09c24cd0171eea4c9918a5d"
+dependencies = [
+ "field",
+ "unroll",
+ "verifier_common",
+]
+
+[[package]]
 name = "bimap"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3137,8 +3157,18 @@ name = "full_statement_verifier"
 version = "0.1.0"
 source = "git+https://github.com/matter-labs/zksync-airbender?branch=dev#cef19b322a08ad0fc09c24cd0171eea4c9918a5d"
 dependencies = [
+ "add_sub_lui_auipc_mop_verifier",
+ "bigint_with_control_verifier",
  "blake2_with_compression_verifier",
  "common_constants",
+ "inits_and_teardowns_verifier",
+ "jump_branch_slt_verifier",
+ "keccak_special5_verifier",
+ "load_store_subword_only_verifier",
+ "load_store_word_only_verifier",
+ "mul_div_unsigned_verifier",
+ "mul_div_verifier",
+ "shift_binary_csr_verifier",
  "unified_reduced_machine_verifier",
  "verifier_common",
 ]
@@ -3849,6 +3879,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "inits_and_teardowns_verifier"
+version = "0.1.0"
+source = "git+https://github.com/matter-labs/zksync-airbender?branch=dev#cef19b322a08ad0fc09c24cd0171eea4c9918a5d"
+dependencies = [
+ "field",
+ "unroll",
+ "verifier_common",
+]
+
+[[package]]
 name = "interprocess"
 version = "2.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3965,6 +4005,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "jump_branch_slt_verifier"
+version = "0.1.0"
+source = "git+https://github.com/matter-labs/zksync-airbender?branch=dev#cef19b322a08ad0fc09c24cd0171eea4c9918a5d"
+dependencies = [
+ "field",
+ "unroll",
+ "verifier_common",
+]
+
+[[package]]
 name = "k256"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4007,6 +4057,16 @@ dependencies = [
  "serde",
  "serde_json",
  "verifier_generator",
+]
+
+[[package]]
+name = "keccak_special5_verifier"
+version = "0.1.0"
+source = "git+https://github.com/matter-labs/zksync-airbender?branch=dev#cef19b322a08ad0fc09c24cd0171eea4c9918a5d"
+dependencies = [
+ "field",
+ "unroll",
+ "verifier_common",
 ]
 
 [[package]]
@@ -4064,6 +4124,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "load_store_subword_only_verifier"
+version = "0.1.0"
+source = "git+https://github.com/matter-labs/zksync-airbender?branch=dev#cef19b322a08ad0fc09c24cd0171eea4c9918a5d"
+dependencies = [
+ "field",
+ "unroll",
+ "verifier_common",
+]
+
+[[package]]
 name = "load_store_word_only"
 version = "0.1.0"
 source = "git+https://github.com/matter-labs/zksync-airbender?branch=dev#cef19b322a08ad0fc09c24cd0171eea4c9918a5d"
@@ -4073,6 +4143,16 @@ dependencies = [
  "serde",
  "serde_json",
  "verifier_generator",
+]
+
+[[package]]
+name = "load_store_word_only_verifier"
+version = "0.1.0"
+source = "git+https://github.com/matter-labs/zksync-airbender?branch=dev#cef19b322a08ad0fc09c24cd0171eea4c9918a5d"
+dependencies = [
+ "field",
+ "unroll",
+ "verifier_common",
 ]
 
 [[package]]
@@ -4219,6 +4299,26 @@ dependencies = [
  "serde",
  "serde_json",
  "verifier_generator",
+]
+
+[[package]]
+name = "mul_div_unsigned_verifier"
+version = "0.1.0"
+source = "git+https://github.com/matter-labs/zksync-airbender?branch=dev#cef19b322a08ad0fc09c24cd0171eea4c9918a5d"
+dependencies = [
+ "field",
+ "unroll",
+ "verifier_common",
+]
+
+[[package]]
+name = "mul_div_verifier"
+version = "0.1.0"
+source = "git+https://github.com/matter-labs/zksync-airbender?branch=dev#cef19b322a08ad0fc09c24cd0171eea4c9918a5d"
+dependencies = [
+ "field",
+ "unroll",
+ "verifier_common",
 ]
 
 [[package]]
@@ -6004,6 +6104,16 @@ dependencies = [
  "serde",
  "serde_json",
  "verifier_generator",
+]
+
+[[package]]
+name = "shift_binary_csr_verifier"
+version = "0.1.0"
+source = "git+https://github.com/matter-labs/zksync-airbender?branch=dev#cef19b322a08ad0fc09c24cd0171eea4c9918a5d"
+dependencies = [
+ "field",
+ "unroll",
+ "verifier_common",
 ]
 
 [[package]]
