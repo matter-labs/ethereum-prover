@@ -35,6 +35,13 @@ jobs:
   release-artifacts:
     if: ${{ always() && needs.release-please.outputs.releases_created == 'true' }}
     needs: release-please
+    # Reusable workflows cannot elevate GITHUB_TOKEN permissions on their own.
+    # Grant the scopes that ci-release.yaml needs to update releases, publish to
+    # npm via OIDC, and push the prover image to GHCR.
+    permissions:
+      contents: write
+      id-token: write
+      packages: write
     uses: ./.github/workflows/ci-release.yaml
     with:
       tag: ${{ needs.release-please.outputs.tag_name }}
