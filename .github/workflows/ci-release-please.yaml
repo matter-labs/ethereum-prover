@@ -45,7 +45,7 @@ jobs:
     uses: ./.github/workflows/ci-release.yaml
     with:
       tag: ${{ needs.release-please.outputs.tag_name }}
-      skip_npm_publish: false
+      skip_npm_publish: true # Publishing is tied to the workflow file name, so we can't call it via workflow call
       upload_prover_bundle: true
       push_docker_image: true
     secrets: inherit
