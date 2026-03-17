@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/matter-labs/ethereum-prover/compare/v0.1.2...v0.1.3) (2026-03-17)
+
+
+### Features
+
+* Fix verifier ([#20](https://github.com/matter-labs/ethereum-prover/issues/20)) ([2286a1d](https://github.com/matter-labs/ethereum-prover/commit/2286a1d0c40593049dbac926d92e0cf2246cb9c8))
+
 ## [0.1.2](https://github.com/matter-labs/ethereum-prover/compare/v0.1.1...v0.1.2) (2026-03-16)
 
 
