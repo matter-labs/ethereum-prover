@@ -7,7 +7,8 @@ use wasm_bindgen::prelude::*;
 mod unified_verifier;
 
 use unified_verifier::{
-    verify_proof_in_unified_layer, CompiledCircuitsSet, UnrolledProgramProof, UnrolledProgramSetup,
+    verify_proof_in_unified_layer, CompiledCircuitsSet, UnrolledProgramProof,
+    UnrolledProgramSetup,
 };
 
 const DEFAULT_SETUP_BIN: &[u8] = include_bytes!("../../../artifacts/recursion_unified_setup.bin");
@@ -19,14 +20,25 @@ struct VerifierContext {
     layout: CompiledCircuitsSet,
 }
 
+fn decode_exact<T: serde::de::DeserializeOwned>(bytes: &[u8], what: &str) -> Result<T, String> {
+    let (value, bytes_read): (T, usize) =
+        bincode::serde::decode_from_slice(bytes, bincode::config::standard())
+            .map_err(|err| format!("failed to parse {what}: {err}"))?;
+
+    if bytes_read != bytes.len() {
+        return Err(format!(
+            "failed to parse {what}: trailing {} byte(s) indicate an incompatible format",
+            bytes.len() - bytes_read
+        ));
+    }
+
+    Ok(value)
+}
+
 impl VerifierContext {
     fn parse(setup_bin: &[u8], layout_bin: &[u8]) -> Result<Self, String> {
-        let (setup, _): (UnrolledProgramSetup, usize) =
-            bincode::serde::decode_from_slice(setup_bin, bincode::config::standard())
-                .map_err(|err| format!("failed to parse setup.bin: {err}"))?;
-        let (layout, _): (CompiledCircuitsSet, usize) =
-            bincode::serde::decode_from_slice(layout_bin, bincode::config::standard())
-                .map_err(|err| format!("failed to parse layouts.bin: {err}"))?;
+        let setup = decode_exact::<UnrolledProgramSetup>(setup_bin, "setup.bin")?;
+        let layout = decode_exact::<CompiledCircuitsSet>(layout_bin, "layouts.bin")?;
         Ok(Self { setup, layout })
     }
 
@@ -68,9 +80,11 @@ pub fn deserialize_proof_bytes(proof_bytes: &[u8]) -> Result<ProofHandle, JsValu
         .read_to_end(&mut decompressed)
         .map_err(|err| JsValue::from_str(&format!("gzip decode failed: {err}")))?;
 
-    let (proof, _bytes_read): (UnrolledProgramProof, usize) =
-        bincode::serde::decode_from_slice(&decompressed, bincode::config::standard())
-            .map_err(|err| JsValue::from_str(&format!("bincode decode failed: {err}")))?;
+    // This verifier is intentionally tied to the current airbender proof layout.
+    // If the proof schema changes again, fail here with a format error instead of
+    // panicking later while the verifier reads from the ND-source stream.
+    let proof = decode_exact::<UnrolledProgramProof>(&decompressed, "proof")
+        .map_err(|err| JsValue::from_str(&err))?;
 
     Ok(ProofHandle { proof })
 }

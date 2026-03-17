@@ -70,6 +70,7 @@ pub struct UnrolledProgramProof {
     pub register_final_values: [FinalRegisterValue; 32],
     pub recursion_chain_preimage: Option<[u32; 16]>,
     pub recursion_chain_hash: Option<[u32; 8]>,
+    pub pow_challenge: u64,
 }
 
 impl UnrolledProgramProof {
@@ -136,6 +137,11 @@ impl UnrolledProgramProof {
                 responses.push(0);
             }
         }
+
+        let pow_challenge_low = self.pow_challenge as u32;
+        let pow_challenge_high = (self.pow_challenge >> 32) as u32;
+        responses.push(pow_challenge_low);
+        responses.push(pow_challenge_high);
 
         if let Some(preimage) = self.recursion_chain_preimage {
             responses.extend(preimage);
