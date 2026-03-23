@@ -1,11 +1,18 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Once;
 
 use alloy::rpc::types::{Block as RpcBlock, debug::ExecutionWitness};
 use ethereum_prover::prover::types::EthBlockInput;
 
+fn manifest_dir() -> PathBuf {
+    std::env::var_os("CARGO_MANIFEST_DIR")
+        .map(PathBuf::from)
+        .filter(|path| path.join("test_fixtures").is_dir())
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")))
+}
+
 pub fn fixture_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("test_fixtures")
+    manifest_dir().join("test_fixtures")
 }
 
 pub fn fixture_block_path(fixture: &str) -> PathBuf {
@@ -23,14 +30,16 @@ pub fn fixture_witness_path(fixture: &str) -> PathBuf {
 }
 
 pub fn app_bin_path() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../artifacts/app.bin")
+    manifest_dir().join("../artifacts/app.bin")
 }
 
 pub fn load_fixture_input(fixture: &str) -> EthBlockInput {
-    let block_json =
-        std::fs::read_to_string(fixture_block_path(fixture)).expect("read fixture block");
-    let witness_json =
-        std::fs::read_to_string(fixture_witness_path(fixture)).expect("read fixture witness");
+    let block_path = fixture_block_path(fixture);
+    let witness_path = fixture_witness_path(fixture);
+    let block_json = std::fs::read_to_string(&block_path)
+        .unwrap_or_else(|err| panic!("read fixture block {}: {err}", block_path.display()));
+    let witness_json = std::fs::read_to_string(&witness_path)
+        .unwrap_or_else(|err| panic!("read fixture witness {}: {err}", witness_path.display()));
     let block: RpcBlock = serde_json::from_str(&block_json).expect("parse fixture block");
     let witness: ExecutionWitness =
         serde_json::from_str(&witness_json).expect("parse fixture witness");
