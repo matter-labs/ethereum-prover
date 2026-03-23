@@ -117,10 +117,6 @@ jobs:
         run: nvcc --version
 
       - name: Build and archive tests
-        env:
-          # Preserve the runner workspace path instead of the container-mapped /__w path
-          # so archived tests can still resolve workspace artifacts on the GPU runner.
-          WORKSPACE_DIR: ${{ format('/opt/./actions-runner/_work/{0}/{0}', github.event.repository.name) }}
         run: cargo nextest archive --release -p ethereum_prover --test integration --archive-file "${PROVER_GPU_TESTS}.tar.zst"
 
       - name: Upload tests
