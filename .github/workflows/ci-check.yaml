@@ -99,16 +99,24 @@ jobs:
   build-prover-tests:
     name: build prover tests 📦
     runs-on: matterlabs-ci-runner-high-performance
+    container:
+      image: nvidia/cuda:12.9.1-devel-ubuntu22.04
     env:
       RUST_MIN_STACK: 267108864
-      ZKSYNC_USE_CUDA_STUBS: true
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Setup runner
         uses: ./.github/actions/runner-setup
 
+      - name: Check CUDA version
+        run: nvcc --version
+
       - name: Build and archive tests
+        env:
+          # Preserve the runner workspace path instead of the container-mapped /__w path
+          # so archived tests can still resolve workspace artifacts on the GPU runner.
+          WORKSPACE_DIR: ${{ format('/opt/./actions-runner/_work/{0}/{0}', github.event.repository.name) }}
         run: cargo nextest archive --release -p ethereum_prover --test integration --archive-file "${PROVER_GPU_TESTS}.tar.zst"
 
       - name: Upload tests
