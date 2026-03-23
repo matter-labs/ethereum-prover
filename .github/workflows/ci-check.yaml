@@ -95,23 +95,18 @@ jobs:
   ######################################
   ethereum-prover-gpu-tests:
     name: ethereum-prover gpu tests 🖥️
-    runs-on: [matterlabs-ci-gpu-runner, hetzner]
+    runs-on: matterlabs-ci-gpu-runner
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Setup runner
         uses: ./.github/actions/runner-setup
 
-      - name: Check Nvidia driver version
-        run: nvidia-smi
-
       - name: Run prover tests on GPU
         env:
           RUN_GPU_TESTS: '1'
           RUST_MIN_STACK: 267108864
-        run: |
-          ulimit -s 300000
-          cargo nextest run -p ethereum_prover --test integration --release
+        run: cargo nextest run -p ethereum_prover --test integration --release
 
   # Special job that allows some of the jobs to be skipped or failed
   # requiring others to be successful
