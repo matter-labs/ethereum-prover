@@ -102,6 +102,10 @@ jobs:
     container:
       image: nvidia/cuda:12.9.1-devel-ubuntu22.04
     env:
+      # The build container has no attached GPU, so the CUDA build must not rely
+      # on `native` architecture detection. Keep this aligned with the GPU CI
+      # runner fleet, following the working zksync-airbender setup.
+      CUDAARCHS: '80;89;90'
       RUST_MIN_STACK: 267108864
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
