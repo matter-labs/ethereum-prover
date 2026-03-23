@@ -50,7 +50,22 @@ impl ContinuousBlockStream {
         tracing::info!("Running continuous block stream");
         let mut last_selected = None;
         loop {
-            let head = self.provider.get_block_number().await?;
+            let head = match super::retry_rpc_call("fetch latest L1 head", || async {
+                self.provider
+                    .get_block_number()
+                    .await
+                    .map_err(anyhow::Error::from)
+            })
+            .await
+            {
+                Ok(head) => head,
+                Err(err) => {
+                    tracing::error!("Failed to fetch the latest L1 head after retries: {err}");
+                    tokio::time::sleep(Duration::from_secs(POLL_INTERVAL_SECS)).await;
+                    continue;
+                }
+            };
+
             let selected = select_block(head, self.prover_id, self.block_mod)?;
             if last_selected.is_some_and(|prev| selected <= prev) {
                 tokio::time::sleep(Duration::from_secs(POLL_INTERVAL_SECS)).await;
@@ -60,9 +75,23 @@ impl ContinuousBlockStream {
 
             tracing::info!("Selected block {}", selected);
 
-            let eth_block_input =
-                super::fetch_input(&self.provider, selected, self.cache_policy, &self.cache)
-                    .await?;
+            let eth_block_input = match super::fetch_input_with_retries(
+                &self.provider,
+                selected,
+                self.cache_policy,
+                &self.cache,
+            )
+            .await
+            {
+                Ok(input) => input,
+                Err(err) => {
+                    tracing::error!(
+                        "Failed to fetch input for block {selected} after retries; skipping block: {err}"
+                    );
+                    tokio::time::sleep(Duration::from_secs(POLL_INTERVAL_SECS)).await;
+                    continue;
+                }
+            };
             tracing::info!("Fetched block input for block {}", selected);
             METRICS.blocks_received_total.inc();
             METRICS.last_processed_block.set(selected);

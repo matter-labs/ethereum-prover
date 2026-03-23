@@ -56,12 +56,21 @@ impl SingleBlockStream {
 
             let block_number = match self.block_number {
                 Some(block_number) => block_number,
-                None => provider.get_block_number().await?,
+                None => {
+                    super::retry_rpc_call("fetch latest L1 head", || async {
+                        provider
+                            .get_block_number()
+                            .await
+                            .map_err(anyhow::Error::from)
+                    })
+                    .await?
+                }
             };
 
             tracing::info!("Fetching block {}", block_number);
 
-            super::fetch_input(&provider, block_number, self.cache_policy, &self.cache).await?
+            super::fetch_input_with_retries(&provider, block_number, self.cache_policy, &self.cache)
+                .await?
         };
 
         tracing::info!(

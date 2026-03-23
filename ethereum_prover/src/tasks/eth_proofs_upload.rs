@@ -47,15 +47,17 @@ impl EthProofsUploadTask {
                     tracing::info!("Marking block {block_number} as queued");
                     if let Err(err) = self.client.queue_proof(block_number).await {
                         tracing::error!("Failed to mark block {block_number} as queued: {err}");
+                    } else {
+                        tracing::info!("Block {block_number} marked as queued");
                     }
-                    tracing::info!("Block {block_number} marked as queued");
                 }
                 CalculationUpdate::ProofProving { block_number } => {
                     tracing::info!("Marking block {block_number} as proving");
                     if let Err(err) = self.client.proving_proof(block_number).await {
                         tracing::error!("Failed to mark block {block_number} as proving: {err}");
+                    } else {
+                        tracing::info!("Block {block_number} marked as proving");
                     }
-                    tracing::info!("Block {block_number} marked as proving");
                 }
                 CalculationUpdate::ProofProvided {
                     block_number,
@@ -73,8 +75,9 @@ impl EthProofsUploadTask {
                         .await
                     {
                         tracing::error!("Failed to upload proof for block {block_number}: {err}");
+                    } else {
+                        tracing::info!("Uploaded proof for block {block_number}");
                     }
-                    tracing::info!("Uploaded proof for block {block_number}");
                 }
                 _ => {
                     // Ignore other commands
