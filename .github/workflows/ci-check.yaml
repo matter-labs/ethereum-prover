@@ -12,6 +12,9 @@ concurrency:
   group: check-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PROVER_GPU_TESTS: prover-gpu-tests
+
 jobs:
   general-checks:
     name: general-checks 🧹
@@ -90,23 +93,56 @@ jobs:
       - name: Tests (nextest)
         run: RUST_MIN_STACK=267108864 cargo nextest run -p ethereum_prover --release
 
-  ######################################
-  #  Run prover integration tests GPU  #
-  ######################################
-  ethereum-prover-gpu-tests:
-    name: ethereum-prover gpu tests 🖥️
-    runs-on: matterlabs-ci-gpu-runner
+  ##########################################
+  #  Build prover integration tests archive #
+  ##########################################
+  build-prover-tests:
+    name: build prover tests 📦
+    runs-on: matterlabs-ci-runner-high-performance
+    env:
+      RUST_MIN_STACK: 267108864
+      ZKSYNC_USE_CUDA_STUBS: true
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Setup runner
         uses: ./.github/actions/runner-setup
 
+      - name: Build and archive tests
+        run: cargo nextest archive --release -p ethereum_prover --test integration --archive-file "${PROVER_GPU_TESTS}.tar.zst"
+
+      - name: Upload tests
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: ${{ env.PROVER_GPU_TESTS }}
+          path: ${{ env.PROVER_GPU_TESTS }}.tar.zst
+          if-no-files-found: error
+          retention-days: 1
+
+  ######################################
+  #  Run prover integration tests GPU  #
+  ######################################
+  ethereum-prover-gpu-tests:
+    name: ethereum-prover gpu tests 🖥️
+    runs-on: matterlabs-ci-gpu-runner
+    needs: build-prover-tests
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Setup runner
+        uses: ./.github/actions/runner-setup
+
+      - name: Download prebuilt tests
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ env.PROVER_GPU_TESTS }}
+          path: .
+
       - name: Run prover tests on GPU
         env:
           RUN_GPU_TESTS: '1'
           RUST_MIN_STACK: 267108864
-        run: cargo nextest run -p ethereum_prover --test integration --release
+        run: cargo nextest run --archive-file "${PROVER_GPU_TESTS}.tar.zst" --workspace-remap "${GITHUB_WORKSPACE}"
 
   # Special job that allows some of the jobs to be skipped or failed
   # requiring others to be successful
@@ -116,6 +152,7 @@ jobs:
     needs:
       - general-checks
       - ethereum-prover-checks
+      - build-prover-tests
       - ethereum-prover-gpu-tests
     steps:
       - name: Decide on PR checks
