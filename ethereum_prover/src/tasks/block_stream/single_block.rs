@@ -1,9 +1,10 @@
+use anyhow::Context as _;
 use alloy::providers::{DynProvider, Provider};
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 use url::Url;
 
 use crate::metrics::METRICS;
-use crate::{CacheStorage, prover::types::EthBlockInput, types::CachePolicy};
+use crate::{CacheStorage, observability, prover::types::EthBlockInput, types::CachePolicy};
 
 #[derive(Debug)]
 pub struct SingleBlockStream {
@@ -35,13 +36,25 @@ impl SingleBlockStream {
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
+        let result = self.run_inner().await;
+        if let Err(ref err) = result {
+            observability::capture_anyhow(err);
+        }
+        result
+    }
+
+    async fn run_inner(self) -> anyhow::Result<()> {
         tracing::info!("Running single block stream");
 
         let input = if let Some(block_number) = self.block_number
             && self.cache.has_cached_block(block_number)
         {
             tracing::info!("Loading block {block_number} from cache");
-            let Some((block, witness)) = self.cache.load_block(block_number)? else {
+            let Some((block, witness)) = self
+                .cache
+                .load_block(block_number)
+                .with_context(|| format!("failed to load block {block_number} from cache"))?
+            else {
                 anyhow::bail!("cache indicated block {block_number} exists, but contents missing");
             };
             EthBlockInput::new(block, witness)
@@ -79,7 +92,16 @@ impl SingleBlockStream {
         );
         METRICS.blocks_received_total.inc();
         METRICS.last_processed_block.set(input.block_header.number);
-        self.sender.send(input).await?;
+        let input_block_number = input.block_header.number;
+        self.sender
+            .send(input)
+            .await
+            .with_context(|| {
+                format!(
+                    "failed to send block {} to the proving pipeline",
+                    input_block_number
+                )
+            })?;
         // We're sending single block only, so we can close the sender here.
         Ok(())
     }

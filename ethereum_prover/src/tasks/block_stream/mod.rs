@@ -1,7 +1,6 @@
 use std::{future::Future, time::Duration};
 
 use anyhow::Context as _;
-
 use crate::{CacheStorage, prover::types::EthBlockInput, types::CachePolicy};
 use alloy::{
     eips::BlockNumberOrTag,
@@ -26,13 +25,17 @@ async fn fetch_input(
     let block = provider
         .get_block_by_number(BlockNumberOrTag::Number(block_number))
         .full()
-        .await?
+        .await
+        .with_context(|| format!("failed to fetch block {block_number} from RPC"))?
         .ok_or_else(|| anyhow::anyhow!("block {block_number} not found"))?;
     let witness = provider
         .debug_execution_witness(BlockNumberOrTag::Number(block_number))
-        .await?;
+        .await
+        .with_context(|| format!("failed to fetch execution witness for block {block_number}"))?;
     if !matches!(cache_policy, CachePolicy::Off) {
-        cache.cache_block(block_number, &block, &witness)?;
+        cache
+            .cache_block(block_number, &block, &witness)
+            .with_context(|| format!("failed to cache block {block_number}"))?;
     }
     let input = EthBlockInput::new(block.clone(), witness.clone());
     Ok(input)
