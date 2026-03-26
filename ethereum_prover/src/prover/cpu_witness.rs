@@ -110,7 +110,9 @@ impl CpuWitnessGenerator {
         {
             Ok(Ok(witness)) => Ok(witness),
             Ok(Err(err)) => Err(err).with_context(|| {
-                format!("failed to generate witness for block {block_number} using zksync_os_runner")
+                format!(
+                    "failed to generate witness for block {block_number} using zksync_os_runner"
+                )
             }),
             Err(err) => {
                 let panic_msg = crate::utils::extract_panic_message(err);

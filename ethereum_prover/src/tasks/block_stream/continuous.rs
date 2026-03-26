@@ -105,10 +105,9 @@ impl ContinuousBlockStream {
             tracing::info!("Fetched block input for block {}", selected);
             METRICS.blocks_received_total.inc();
             METRICS.last_processed_block.set(selected);
-            self.sender
-                .send(eth_block_input)
-                .await
-                .with_context(|| format!("failed to send block {selected} to the proving pipeline"))?;
+            self.sender.send(eth_block_input).await.with_context(|| {
+                format!("failed to send block {selected} to the proving pipeline")
+            })?;
         }
     }
 }

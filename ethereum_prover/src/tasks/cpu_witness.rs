@@ -113,27 +113,26 @@ impl CpuWitnessTask {
 
     async fn process_block(&self, witness: EthBlockInput) -> anyhow::Result<Vec<u32>> {
         let block_number = witness.block_header.number;
-        tracing::info!(
-            "Performing forward run for block {}",
-            block_number
-        );
-        let oracle = build_oracle(witness.clone())
-            .with_context(|| format!("failed to build the forward-run oracle for block {block_number}"))?;
+        tracing::info!("Performing forward run for block {}", block_number);
+        let oracle = build_oracle(witness.clone()).with_context(|| {
+            format!("failed to build the forward-run oracle for block {block_number}")
+        })?;
         if let Err(err) = self
             .witness_generator
             .forward_run(block_number, oracle)
             .await
             .with_context(|| format!("failed to perform forward run for block {block_number}"))
         {
-            self.debug_block(witness.clone())
-                .await
-                .with_context(|| format!("failed to debug block {block_number} after forward-run failure"))?;
+            self.debug_block(witness.clone()).await.with_context(|| {
+                format!("failed to debug block {block_number} after forward-run failure")
+            })?;
             return Err(err);
         }
 
         tracing::info!("Generating witness for block {}", block_number);
-        let oracle = build_oracle(witness)
-            .with_context(|| format!("failed to build the witness oracle for block {block_number}"))?;
+        let oracle = build_oracle(witness).with_context(|| {
+            format!("failed to build the witness oracle for block {block_number}")
+        })?;
         let cpu_witness = self
             .witness_generator
             .generate_witness(block_number, oracle)
@@ -146,9 +145,12 @@ impl CpuWitnessTask {
         let block_number = witness.block_header.number;
         match &self.rpc_url {
             Some(rpc_url) => {
-                tracing::warn!("Forward run failed for block {block_number}, attempting to debug using RPC");
-                let oracle = build_oracle(witness.clone())
-                    .with_context(|| format!("failed to build the debug oracle for block {block_number}"))?;
+                tracing::warn!(
+                    "Forward run failed for block {block_number}, attempting to debug using RPC"
+                );
+                let oracle = build_oracle(witness.clone()).with_context(|| {
+                    format!("failed to build the debug oracle for block {block_number}")
+                })?;
                 let provider = alloy::providers::builder().connect_http(rpc_url.clone());
                 let provider = DynProvider::new(provider);
 
@@ -162,16 +164,18 @@ impl CpuWitnessTask {
                     .witness_generator
                     .debug(block_number, oracle, debugger)
                     .await
-                    .with_context(|| {
-                        format!("debugging failed for block {block_number}")
-                    })?;
+                    .with_context(|| format!("debugging failed for block {block_number}"))?;
                 tracing::info!("Debugging completed for block {}", block_number);
                 for problem in debugger.get_problems() {
-                    tracing::error!("Problem found while debugging block {block_number}: {problem}");
+                    tracing::error!(
+                        "Problem found while debugging block {block_number}: {problem}"
+                    );
                 }
             }
             None => {
-                tracing::warn!("Forward run failed for block {block_number}, no RPC URL provided for debugging");
+                tracing::warn!(
+                    "Forward run failed for block {block_number}, no RPC URL provided for debugging"
+                );
                 tracing::warn!("In order to debug the issue, provide an RPC URL in the config");
             }
         }

@@ -1,8 +1,8 @@
-use anyhow::Context as _;
 use crate::cache::CacheStorage;
 use crate::observability;
 use crate::tasks::CalculationUpdate;
 use crate::types::CachePolicy;
+use anyhow::Context as _;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 
 #[derive(Debug)]
@@ -48,7 +48,9 @@ impl CacheManagerTask {
                         self.cache_storage
                             .remove_cached_block(*block_number)
                             .with_context(|| {
-                                format!("failed to remove cached artifacts for block {block_number}")
+                                format!(
+                                    "failed to remove cached artifacts for block {block_number}"
+                                )
                             })?;
                     }
                 }

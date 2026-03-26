@@ -118,8 +118,9 @@ impl GpuProveTask {
 
     async fn process_block(&mut self, witness: EthBlockInput) -> anyhow::Result<ProofResult> {
         let block_number = witness.block_header.number;
-        let oracle = build_oracle(witness)
-            .with_context(|| format!("failed to build the proving oracle for block {block_number}"))?;
+        let oracle = build_oracle(witness).with_context(|| {
+            format!("failed to build the proving oracle for block {block_number}")
+        })?;
 
         tracing::info!("Proving block {} on GPU", block_number);
         self.gpu_prover

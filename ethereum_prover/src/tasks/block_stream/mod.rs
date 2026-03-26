@@ -1,11 +1,11 @@
 use std::{future::Future, time::Duration};
 
-use anyhow::Context as _;
 use crate::{CacheStorage, prover::types::EthBlockInput, types::CachePolicy};
 use alloy::{
     eips::BlockNumberOrTag,
     providers::{DynProvider, Provider, ext::DebugApi as _},
 };
+use anyhow::Context as _;
 
 mod continuous;
 mod single_block;

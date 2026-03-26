@@ -70,7 +70,10 @@ impl Runner {
                     config.cache_policy,
                 );
                 // Single block mode is used for debugging, so we don't want to remove cache artifacts
-                join_set.spawn(observability::bind_task("single_block_stream", stream.run()));
+                join_set.spawn(observability::bind_task(
+                    "single_block_stream",
+                    stream.run(),
+                ));
                 (receiver, false)
             }
         };

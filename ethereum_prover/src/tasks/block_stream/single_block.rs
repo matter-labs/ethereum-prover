@@ -1,5 +1,5 @@
-use anyhow::Context as _;
 use alloy::providers::{DynProvider, Provider};
+use anyhow::Context as _;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 use url::Url;
 
@@ -93,15 +93,12 @@ impl SingleBlockStream {
         METRICS.blocks_received_total.inc();
         METRICS.last_processed_block.set(input.block_header.number);
         let input_block_number = input.block_header.number;
-        self.sender
-            .send(input)
-            .await
-            .with_context(|| {
-                format!(
-                    "failed to send block {} to the proving pipeline",
-                    input_block_number
-                )
-            })?;
+        self.sender.send(input).await.with_context(|| {
+            format!(
+                "failed to send block {} to the proving pipeline",
+                input_block_number
+            )
+        })?;
         // We're sending single block only, so we can close the sender here.
         Ok(())
     }
