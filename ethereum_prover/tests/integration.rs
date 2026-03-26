@@ -23,12 +23,16 @@ macro_rules! require_gpu_tests {
 async fn cpu_witness_from_fixture_block() {
     common::init_tracing();
     let input = common::load_fixture_input("24073997");
+    let block_number = input.block_header.number;
     let oracle = build_oracle(input.clone()).expect("build oracle");
     let generator = CpuWitnessGenerator::new(common::app_bin_path());
 
-    generator.forward_run(oracle).await.expect("forward run");
+    generator
+        .forward_run(block_number, oracle)
+        .await
+        .expect("forward run");
     let witness = generator
-        .generate_witness(build_oracle(input).expect("build oracle"))
+        .generate_witness(block_number, build_oracle(input).expect("build oracle"))
         .await
         .expect("generate witness");
 
