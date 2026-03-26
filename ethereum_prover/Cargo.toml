@@ -57,7 +57,7 @@ futures = "0.3.31"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt"] }
 url = "2"
-sentry = { version = "0.32", default-features = false, features = ["anyhow", "panic"] }
+sentry = { version = "0.32", default-features = false, features = ["anyhow", "panic", "transport"] }
 sentry-anyhow = "0.32"
 vise = "0.3.2"
 vise-exporter = "0.3.2"

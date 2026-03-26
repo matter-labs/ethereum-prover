@@ -17,6 +17,7 @@ pub mod config;
 pub(crate) mod cache;
 pub(crate) mod clients;
 pub mod metrics;
+pub(crate) mod observability;
 pub mod prover;
 pub(crate) mod tasks;
 pub(crate) mod types;
@@ -55,7 +56,10 @@ impl Runner {
                     cache_storage.clone(),
                     config.cache_policy,
                 );
-                join_set.spawn(stream.run());
+                join_set.spawn(observability::bind_task(
+                    "continuous_block_stream",
+                    stream.run(),
+                ));
                 (receiver, true)
             }
             Command::Block { block_number } => {
@@ -66,7 +70,10 @@ impl Runner {
                     config.cache_policy,
                 );
                 // Single block mode is used for debugging, so we don't want to remove cache artifacts
-                join_set.spawn(stream.run());
+                join_set.spawn(observability::bind_task(
+                    "single_block_stream",
+                    stream.run(),
+                ));
                 (receiver, false)
             }
         };
@@ -81,14 +88,14 @@ impl Runner {
                     rpc_url.clone(),
                     cache_storage.clone(),
                 );
-                join_set.spawn(task.run());
+                join_set.spawn(observability::bind_task("cpu_witness", task.run()));
                 command_receiver
             }
             Mode::GpuProve => {
                 // TODO: support worker threads? Though it's likely not needed anytime soon.
                 tracing::info!("Creating GPU prover");
                 let app_bin_path = config.app_bin_path.clone();
-                let gpu_prover = tokio::task::spawn_blocking(move || {
+                let gpu_prover = observability::spawn_blocking_on_current_hub(move || {
                     Prover::new(app_bin_path.as_path(), None).context("failed to create prover")
                 })
                 .await
@@ -100,7 +107,7 @@ impl Runner {
                     block_stream_receiver,
                     config.on_failure,
                 );
-                join_set.spawn(task.run());
+                join_set.spawn(observability::bind_task("gpu_prove", task.run()));
                 command_receiver
             }
         };
@@ -115,7 +122,10 @@ impl Runner {
                 (task, mode_command_receiver)
             };
             mode_command_receiver = new_command_receiver;
-            join_set.spawn(cache_manager_task.run());
+            join_set.spawn(observability::bind_task(
+                "cache_manager",
+                cache_manager_task.run(),
+            ));
         }
 
         if config.ethproofs_submission.enabled() {
@@ -136,10 +146,10 @@ impl Runner {
                 ethproofs_client,
                 mode_command_receiver,
             );
-            join_set.spawn(task.run());
+            join_set.spawn(observability::bind_task("ethproofs_upload", task.run()));
         } else {
             let task = tasks::eth_proofs_upload::EthProofsNoOpTask::new(mode_command_receiver);
-            join_set.spawn(task.run());
+            join_set.spawn(observability::bind_task("ethproofs_noop", task.run()));
         }
 
         while let Some(result) = join_set.join_next().await {

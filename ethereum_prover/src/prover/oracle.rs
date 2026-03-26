@@ -92,7 +92,10 @@ pub fn build_oracle(input: EthBlockInput) -> anyhow::Result<ZkEENonDeterminismSo
             {
                 let props = EthereumAccountProperties::parse_from_rlp_bytes(props)
                     .map_err(|_| anyhow!("failed to parse account properties"))?;
-                let key = B160::from_be_bytes::<20>(el[..].try_into().unwrap());
+                let key_bytes: [u8; 20] = el[..]
+                    .try_into()
+                    .map_err(|_| anyhow!("execution witness account key is not 20 bytes"))?;
+                let key = B160::from_be_bytes::<20>(key_bytes);
                 account_properties.insert(key, props);
             }
         }

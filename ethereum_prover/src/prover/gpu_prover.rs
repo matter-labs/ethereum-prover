@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
+use crate::observability;
+
 #[derive(Debug)]
 pub struct ProofResult {
     pub proof_bytes: Vec<u8>,
@@ -47,16 +49,21 @@ impl Prover {
 
         let inner = self.inner.clone();
 
-        let future_result = tokio::task::spawn_blocking(move || {
-            let prover = inner.lock().unwrap();
-            prover
-                .as_ref()
-                .expect("Prover not provided")
-                .prove(block_number, oracle)
+        // We execute the heavy GPU work on a blocking thread, but keep the
+        // current hub bound so a panic still lands in Sentry with the block tag.
+        let future_result = observability::spawn_blocking_on_current_hub(move || {
+            let prover = inner.lock().map_err(|_| {
+                anyhow::anyhow!("prover mutex is poisoned while processing block {block_number}")
+            })?;
+            let prover = prover.as_ref().ok_or_else(|| {
+                anyhow::anyhow!("prover is not available while processing block {block_number}")
+            })?;
+            Ok(prover.prove(block_number, oracle))
         })
         .await;
         let (proof, cycles) = match future_result {
-            Ok(result) => result,
+            Ok(Ok(result)) => result,
+            Ok(Err(err)) => return Err(err),
             Err(err) => {
                 let panic_msg = crate::utils::extract_panic_message(err);
                 tracing::error!("Prover panicked for block {}: {}", block_number, panic_msg);
@@ -66,34 +73,43 @@ impl Prover {
                 {
                     // Ensure that we only have a single reference.
                     let strong_count = Arc::strong_count(&self.inner);
-                    assert!(
+                    anyhow::ensure!(
                         strong_count == 1,
-                        "Expected exactly one strong reference to the prover, but found {}",
+                        "failed to recover prover after block {block_number} panic: expected exactly one strong reference, found {}",
                         strong_count
                     );
 
-                    let mut inner = self.inner.lock().unwrap();
+                    let mut inner = self.inner.lock().map_err(|_| {
+                        anyhow::anyhow!(
+                            "prover mutex is poisoned while recovering from block {block_number} panic"
+                        )
+                    })?;
                     let old_value = inner.take();
                     tracing::info!("Dropping the existing (poisoned) prover instance");
                     drop(old_value);
 
                     tracing::info!("Re-creating a new prover instance to replace the poisoned one");
-                    // If we cannot reinstantiate the prover for some reason, we cannot do much -- better to panic.
-                    *inner = Some(create_unrolled_prover(self.app_bin_path.as_path(), self.worker_threads).expect(
-                        "failed to re-instantiate prover after panic; prover app binary path is invalid",
-                    ));
+                    let replacement = create_unrolled_prover(
+                        self.app_bin_path.as_path(),
+                        self.worker_threads,
+                    )
+                    .with_context(|| {
+                        format!(
+                            "failed to re-instantiate prover after panic while processing block {block_number}"
+                        )
+                    })?;
+                    *inner = Some(replacement);
                 }
 
                 return Err(anyhow::anyhow!(
-                    "Prover task panicked for the block {}: {}",
-                    block_number,
-                    panic_msg
+                    "prover task panicked while processing block {block_number}: {panic_msg}"
                 ));
             }
         };
 
         let proving_time_secs = start.elapsed().as_secs_f64();
-        let proof_bytes = bincode::serde::encode_to_vec(&proof, bincode::config::standard())?;
+        let proof_bytes = bincode::serde::encode_to_vec(&proof, bincode::config::standard())
+            .with_context(|| format!("failed to encode proof bytes for block {block_number}"))?;
         Ok(ProofResult {
             proof_bytes,
             cycles,

@@ -1,3 +1,4 @@
+use anyhow::Context as _;
 use std::time::Duration;
 
 use alloy::providers::{DynProvider, Provider};
@@ -5,7 +6,7 @@ use tokio::sync::mpsc::{Receiver, Sender, channel};
 use url::Url;
 
 use crate::metrics::METRICS;
-use crate::{CacheStorage, prover::types::EthBlockInput, types::CachePolicy};
+use crate::{CacheStorage, observability, prover::types::EthBlockInput, types::CachePolicy};
 
 const POLL_INTERVAL_SECS: u64 = 2;
 
@@ -47,6 +48,14 @@ impl ContinuousBlockStream {
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
+        let result = self.run_inner().await;
+        if let Err(ref err) = result {
+            observability::capture_anyhow(err);
+        }
+        result
+    }
+
+    async fn run_inner(self) -> anyhow::Result<()> {
         tracing::info!("Running continuous block stream");
         let mut last_selected = None;
         loop {
@@ -66,7 +75,8 @@ impl ContinuousBlockStream {
                 }
             };
 
-            let selected = select_block(head, self.prover_id, self.block_mod)?;
+            let selected = select_block(head, self.prover_id, self.block_mod)
+                .context("failed to select the next block to process")?;
             if last_selected.is_some_and(|prev| selected <= prev) {
                 tokio::time::sleep(Duration::from_secs(POLL_INTERVAL_SECS)).await;
                 continue;
@@ -95,7 +105,9 @@ impl ContinuousBlockStream {
             tracing::info!("Fetched block input for block {}", selected);
             METRICS.blocks_received_total.inc();
             METRICS.last_processed_block.set(selected);
-            self.sender.send(eth_block_input).await?;
+            self.sender.send(eth_block_input).await.with_context(|| {
+                format!("failed to send block {selected} to the proving pipeline")
+            })?;
         }
     }
 }

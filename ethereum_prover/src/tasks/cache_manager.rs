@@ -1,6 +1,8 @@
 use crate::cache::CacheStorage;
+use crate::observability;
 use crate::tasks::CalculationUpdate;
 use crate::types::CachePolicy;
+use anyhow::Context as _;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 
 #[derive(Debug)]
@@ -29,18 +31,35 @@ impl CacheManagerTask {
         )
     }
 
-    pub async fn run(mut self) -> anyhow::Result<()> {
+    pub async fn run(self) -> anyhow::Result<()> {
+        let result = self.run_inner().await;
+        if let Err(ref err) = result {
+            observability::capture_anyhow(err);
+        }
+        result
+    }
+
+    async fn run_inner(mut self) -> anyhow::Result<()> {
         while let Some(command) = self.command_mode_receiver.recv().await {
             match &command {
                 CalculationUpdate::ProofProvided { block_number, .. }
                 | CalculationUpdate::WitnessCalculated { block_number, .. } => {
                     if matches!(self.cache_policy, CachePolicy::OnFailure) {
-                        self.cache_storage.remove_cached_block(*block_number)?;
+                        self.cache_storage
+                            .remove_cached_block(*block_number)
+                            .with_context(|| {
+                                format!(
+                                    "failed to remove cached artifacts for block {block_number}"
+                                )
+                            })?;
                     }
                 }
                 _ => {}
             }
-            self.command_mode_sender.send(command).await?;
+            self.command_mode_sender
+                .send(command)
+                .await
+                .context("failed to forward cache manager command")?;
         }
 
         Ok(())

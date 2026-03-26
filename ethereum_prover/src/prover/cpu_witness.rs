@@ -17,7 +17,7 @@ use oracle_provider::ReadWitnessSource;
 use oracle_provider::ZkEENonDeterminismSource;
 use zk_ee::system::tracer::NopTracer;
 
-use crate::CacheStorage;
+use crate::{CacheStorage, observability};
 
 #[derive(Debug, Clone)]
 pub struct CpuWitnessGenerator {
@@ -29,25 +29,40 @@ impl CpuWitnessGenerator {
         Self { app_bin_path }
     }
 
-    pub async fn forward_run(&self, oracle: ZkEENonDeterminismSource) -> anyhow::Result<()> {
-        tokio::task::spawn_blocking(move || {
+    pub async fn forward_run(
+        &self,
+        block_number: u64,
+        oracle: ZkEENonDeterminismSource,
+    ) -> anyhow::Result<()> {
+        match observability::spawn_blocking_on_current_hub(move || {
             let mut result_keeper = ForwardRunningResultKeeper::new(NoopTxCallback);
             let mut nop_tracer = NopTracer::default();
             BasicBootloader::<EthereumStorageSystemTypesWithPostOps<ZkEENonDeterminismSource>>::run::<
                 BasicBootloaderForwardETHLikeConfig,
             >(oracle, &mut result_keeper, &mut nop_tracer)
-            .map_err(|err| anyhow::anyhow!("Failed to run the STF in forward run mode: {err:?}"))?;
+            .map_err(|err| anyhow::anyhow!("failed to run the STF in forward-run mode: {err:?}"))?;
 
             Ok(())
-        }).await?
+        })
+        .await
+        {
+            Ok(result) => result,
+            Err(err) => {
+                let panic_msg = crate::utils::extract_panic_message(err);
+                Err(anyhow::anyhow!(
+                    "forward-run task panicked while processing block {block_number}: {panic_msg}"
+                ))
+            }
+        }
     }
 
     pub async fn debug(
         &self,
+        block_number: u64,
         oracle: ZkEENonDeterminismSource,
         debugger: DebuggerTxCallback,
     ) -> anyhow::Result<DebuggerTxCallback> {
-        tokio::task::spawn_blocking(move || {
+        match observability::spawn_blocking_on_current_hub(move || {
             let mut result_keeper = ForwardRunningResultKeeper::new(debugger);
             let mut nop_tracer = NopTracer::default();
             // We ignore the error, as we are debugging and getting the results.
@@ -61,21 +76,31 @@ impl CpuWitnessGenerator {
 
             Ok(result_keeper.tx_result_callback)
         })
-        .await?
+        .await
+        {
+            Ok(result) => result,
+            Err(err) => {
+                let panic_msg = crate::utils::extract_panic_message(err);
+                Err(anyhow::anyhow!(
+                    "debug task panicked while processing block {block_number}: {panic_msg}"
+                ))
+            }
+        }
     }
 
     pub async fn generate_witness(
         &self,
+        block_number: u64,
         oracle: ZkEENonDeterminismSource,
     ) -> anyhow::Result<Vec<u32>> {
         let app_bin_path = self.app_bin_path.clone();
-        match tokio::task::spawn_blocking(move || {
+        match observability::spawn_blocking_on_current_hub(move || {
             let copy_source = ReadWitnessSource::new(oracle);
             let items = copy_source.get_read_items();
 
             let output = zksync_os_runner::run(app_bin_path, None, 1 << 36, copy_source);
             if output == [0u32; 8] {
-                anyhow::bail!("zksync_os_runner failed to execute the block");
+                anyhow::bail!("zksync_os_runner failed to execute block {block_number}");
             }
 
             let witness = items.borrow().clone();
@@ -84,12 +109,15 @@ impl CpuWitnessGenerator {
         .await
         {
             Ok(Ok(witness)) => Ok(witness),
-            Ok(Err(err)) => Err(err).context("Failed to generate witness using zksync_os_runner"),
+            Ok(Err(err)) => Err(err).with_context(|| {
+                format!(
+                    "failed to generate witness for block {block_number} using zksync_os_runner"
+                )
+            }),
             Err(err) => {
                 let panic_msg = crate::utils::extract_panic_message(err);
                 Err(anyhow::anyhow!(
-                    "Witness generation task panicked: {}",
-                    panic_msg
+                    "witness generation task panicked while processing block {block_number}: {panic_msg}"
                 ))
             }
         }

@@ -7,8 +7,7 @@ use wasm_bindgen::prelude::*;
 mod unified_verifier;
 
 use unified_verifier::{
-    verify_proof_in_unified_layer, CompiledCircuitsSet, UnrolledProgramProof,
-    UnrolledProgramSetup,
+    verify_proof_in_unified_layer, CompiledCircuitsSet, UnrolledProgramProof, UnrolledProgramSetup,
 };
 
 const DEFAULT_SETUP_BIN: &[u8] = include_bytes!("../../../artifacts/recursion_unified_setup.bin");
