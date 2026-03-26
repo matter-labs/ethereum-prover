@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.4](https://github.com/matter-labs/ethereum-prover/compare/v0.1.3...v0.1.4) (2026-03-26)
+
+
+### Features
+
+* improve observability via sentry ([#27](https://github.com/matter-labs/ethereum-prover/issues/27)) ([3c064e8](https://github.com/matter-labs/ethereum-prover/commit/3c064e8e45f94f14edeb84ed41ddfc2a8e785f2b))
+
+
+### Bug Fixes
+
+* handle transient L1 RPC failures ([#22](https://github.com/matter-labs/ethereum-prover/issues/22)) ([d56ee47](https://github.com/matter-labs/ethereum-prover/commit/d56ee4728ea66c0cd2168117d1d5c095f65c1b6f))
+* restore GPU CI job ([#23](https://github.com/matter-labs/ethereum-prover/issues/23)) ([bd4691c](https://github.com/matter-labs/ethereum-prover/commit/bd4691c435468c049b4714bc64434886206cb5ee))
+
 ## [0.1.3](https://github.com/matter-labs/ethereum-prover/compare/v0.1.2...v0.1.3) (2026-03-17)
 
 
