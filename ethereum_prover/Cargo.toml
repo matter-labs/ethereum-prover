@@ -37,20 +37,20 @@ thiserror = "1"
 # zksync_os_runner = { path = "../zksync-os/zksync_os_runner" }
 # system_hooks = { path = "../zksync-os/system_hooks", features = ["p256_precompile"] }
 
-forward_system = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka", features = ["no_print", "pectra"] }
-oracle_provider = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka" }
-callable_oracles = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka" }
-crypto = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka" }
-zk_ee = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka" }
-basic_system = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka" }
-basic_bootloader = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka" }
-zksync_os_runner = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka" }
-system_hooks = { git = "https://github.com/matter-labs/zksync-os", branch = "popzxc/more-ethproofs-fusaka", features = ["p256_precompile"] }
+forward_system = { git = "https://github.com/matter-labs/zksync-os", rev = "7032e1689bb3337067dfa0c66c6d08cbdfde16f6", features = ["no_print", "pectra"] }
+oracle_provider = { git = "https://github.com/matter-labs/zksync-os", rev = "7032e1689bb3337067dfa0c66c6d08cbdfde16f6" }
+callable_oracles = { git = "https://github.com/matter-labs/zksync-os", rev = "7032e1689bb3337067dfa0c66c6d08cbdfde16f6" }
+crypto = { git = "https://github.com/matter-labs/zksync-os", rev = "7032e1689bb3337067dfa0c66c6d08cbdfde16f6" }
+zk_ee = { git = "https://github.com/matter-labs/zksync-os", rev = "7032e1689bb3337067dfa0c66c6d08cbdfde16f6" }
+basic_system = { git = "https://github.com/matter-labs/zksync-os", rev = "7032e1689bb3337067dfa0c66c6d08cbdfde16f6" }
+basic_bootloader = { git = "https://github.com/matter-labs/zksync-os", rev = "7032e1689bb3337067dfa0c66c6d08cbdfde16f6" }
+zksync_os_runner = { git = "https://github.com/matter-labs/zksync-os", rev = "7032e1689bb3337067dfa0c66c6d08cbdfde16f6" }
+system_hooks = { git = "https://github.com/matter-labs/zksync-os", rev = "7032e1689bb3337067dfa0c66c6d08cbdfde16f6", features = ["p256_precompile"] }
 
-# execution_utils = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", default-features = false, optional = true }
-# risc_v_simulator = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", features = ["delegation"], optional = true }
-execution_utils = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", default-features = false, features = ["prover", "gpu_prover", "security_80"] }
-risc_v_simulator = { git = "https://github.com/matter-labs/zksync-airbender", branch = "dev", features = ["delegation"] }
+# execution_utils = { git = "https://github.com/matter-labs/zksync-airbender", rev = "cef19b322a08ad0fc09c24cd0171eea4c9918a5d", default-features = false, optional = true }
+# risc_v_simulator = { git = "https://github.com/matter-labs/zksync-airbender", rev = "cef19b322a08ad0fc09c24cd0171eea4c9918a5d", features = ["delegation"], optional = true }
+execution_utils = { git = "https://github.com/matter-labs/zksync-airbender", rev = "cef19b322a08ad0fc09c24cd0171eea4c9918a5d", default-features = false, features = ["prover", "gpu_prover", "security_80"] }
+risc_v_simulator = { git = "https://github.com/matter-labs/zksync-airbender", rev = "cef19b322a08ad0fc09c24cd0171eea4c9918a5d", features = ["delegation"] }
 smart-config = "0.4.0-pre.1"
 serde_yaml = "0.9.34"
 futures = "0.3.31"
