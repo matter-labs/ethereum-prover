@@ -40,7 +40,9 @@ COPY --from=planner /usr/src/ethereum-prover/recipe.json recipe.json
 RUN cargo chef cook -p ethereum_prover --release --recipe-path recipe.json
 
 COPY . .
-RUN cargo build -p ethereum_prover --release
+RUN cargo build -p ethereum_prover --release && \
+    target/release/ethereum_prover generate-verifier-artifacts \
+        --output-dir /tmp/generated-verifier-artifacts
 
 # The runtime bundle intentionally preserves the repo-like layout.
 # The shipped configs still point to ../artifacts/app.bin, so we keep that
@@ -50,8 +52,13 @@ RUN mkdir -p /out/ethereum_prover/configs /out/artifacts && \
     cp /usr/src/ethereum-prover/ethereum_prover/.env.example /out/ethereum_prover/ && \
     cp /usr/src/ethereum-prover/ethereum_prover/configs/*.yaml /out/ethereum_prover/configs/ && \
     cp /usr/src/ethereum-prover/artifacts/app.bin /out/artifacts/ && \
-    cp /usr/src/ethereum-prover/artifacts/recursion_unified_setup.bin /out/artifacts/ && \
-    cp /usr/src/ethereum-prover/artifacts/recursion_unified_layouts.bin /out/artifacts/
+    cp /usr/src/ethereum-prover/artifacts/app.text /out/artifacts/ && \
+    cp /tmp/generated-verifier-artifacts/recursion_unified_setup.bin /out/artifacts/ && \
+    cp /tmp/generated-verifier-artifacts/recursion_unified_layouts.bin /out/artifacts/ && \
+    cp /tmp/generated-verifier-artifacts/recursion_unified_security_80_setup.bin /out/artifacts/ && \
+    cp /tmp/generated-verifier-artifacts/recursion_unified_security_80_layouts.bin /out/artifacts/ && \
+    cp /tmp/generated-verifier-artifacts/recursion_unified_security_100_setup.bin /out/artifacts/ && \
+    cp /tmp/generated-verifier-artifacts/recursion_unified_security_100_layouts.bin /out/artifacts/
 
 FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
 

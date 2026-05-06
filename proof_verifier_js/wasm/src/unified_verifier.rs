@@ -197,6 +197,7 @@ pub fn verify_proof_in_unified_layer(
     proof: &UnrolledProgramProof,
     setup: &UnrolledProgramSetup,
     compiled_layouts: &CompiledCircuitsSet,
+    security: verifier_common::SecurityModel,
     input_is_unrolled: bool,
 ) -> Result<[u32; 16], ()> {
     let responses = flatten_proof_into_responses_for_unified_recursion(
@@ -213,7 +214,7 @@ pub fn verify_proof_in_unified_layer(
             prover::nd_source_std::set_iterator(it);
 
             full_statement_verifier::unified_circuit_statement::
-                verify_unrolled_or_unified_circuit_recursion_layer()
+                verify_unrolled_or_unified_circuit_recursion_layer(security)
         })
         .map_err(|_| ());
 
@@ -230,7 +231,7 @@ pub fn verify_proof_in_unified_layer(
                 prover::nd_source_std::set_iterator(it);
 
                 full_statement_verifier::unified_circuit_statement::
-                    verify_unrolled_or_unified_circuit_recursion_layer()
+                    verify_unrolled_or_unified_circuit_recursion_layer(security)
             })
             .expect("must spawn verifier thread")
             .join();

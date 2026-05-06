@@ -1,9 +1,12 @@
 import init, {
   deserialize_proof_bytes,
   init_defaults,
-  init_with,
+  init_with_all,
+  init_with_security,
   InitOutput,
-  verify_proof
+  SecurityLevel as WasmSecurityLevel,
+  verify_proof,
+  verify_proof_with_security
 } from "../wasm/pkg/proof_verifier_wasm";
 
 /**
@@ -21,6 +24,15 @@ export type VerificationResult = {
   error: string | null;
 };
 
+export type ProofSecurity = "security_80" | "security_100";
+
+export type VerifierArtifactPair = {
+  /** Binary setup data that defines the verifier's cryptographic setup. */
+  setupBin: Uint8Array;
+  /** Binary layout data that defines circuit layout metadata. */
+  layoutBin: Uint8Array;
+};
+
 /**
  * Optional verifier configuration for custom setup and layout for circuits.
  *
@@ -28,10 +40,16 @@ export type VerificationResult = {
  * Ethereum STF ZK proof system and must match the proof's circuit version.
  */
 export type VerifierOptions = {
-  /** Binary setup data that defines the verifier's cryptographic setup. */
-  setupBin: Uint8Array;
-  /** Binary layout data that defines circuit layout metadata. */
-  layoutBin: Uint8Array;
+  /** Legacy single artifact pair. Defaults to 80-bit security. */
+  setupBin?: Uint8Array;
+  /** Legacy single artifact pair. Defaults to 80-bit security. */
+  layoutBin?: Uint8Array;
+  /** Security level for the legacy single artifact pair. */
+  security?: ProofSecurity;
+  /** 80-bit verifier artifacts. */
+  security80?: VerifierArtifactPair;
+  /** 100-bit verifier artifacts. */
+  security100?: VerifierArtifactPair;
 };
 
 /**
@@ -52,6 +70,12 @@ export type Verifier = {
    * @returns VerificationResult describing success/failure.
    */
   verifyProof: (handle: ProofHandle) => VerificationResult;
+  /**
+   * Verifies a proof with an explicitly selected security level.
+   *
+   * This overrides the security level decoded from the proof payload.
+   */
+  verifyProofWithSecurity: (handle: ProofHandle, security: ProofSecurity) => VerificationResult;
 };
 
 let initPromise: Promise<InitOutput> | null = null;
@@ -63,23 +87,81 @@ function ensureInit(): Promise<InitOutput> {
   return initPromise;
 }
 
+function toWasmSecurityLevel(security: ProofSecurity): WasmSecurityLevel {
+  switch (security) {
+    case "security_80":
+      return WasmSecurityLevel.Security80;
+    case "security_100":
+      return WasmSecurityLevel.Security100;
+    default: {
+      const unreachable = security satisfies never;
+      throw new Error(`unsupported proof security level: ${unreachable}`);
+    }
+  }
+}
+
+function resultFromWasm(result: unknown): VerificationResult {
+  const typed = result as {
+    success: boolean;
+    error: () => string | null;
+  };
+
+  return {
+    success: typed.success,
+    error: typed.error()
+  };
+}
+
 class VerifierImpl implements Verifier {
   deserializeProofBytes(proofBytes: Uint8Array): ProofHandle {
     return deserialize_proof_bytes(proofBytes);
   }
 
   verifyProof(handle: ProofHandle): VerificationResult {
-    const result = verify_proof(handle) as unknown as {
-      success: boolean;
-      error: () => string | null;
-    };
-
-    return {
-      success: result.success,
-      error: result.error()
-    };
+    return resultFromWasm(verify_proof(handle));
   }
 
+  verifyProofWithSecurity(handle: ProofHandle, security: ProofSecurity): VerificationResult {
+    return resultFromWasm(verify_proof_with_security(handle, toWasmSecurityLevel(security)));
+  }
+
+}
+
+function initCustomVerifier(options: VerifierOptions): void {
+  if (options.security80 && options.security100) {
+    init_with_all(
+      options.security80.setupBin,
+      options.security80.layoutBin,
+      options.security100.setupBin,
+      options.security100.layoutBin
+    );
+    return;
+  }
+
+  if (options.security80 || options.security100) {
+    const security = options.security100 ? "security_100" : "security_80";
+    const artifacts = options.security100 ?? options.security80;
+    if (!artifacts) {
+      throw new Error("missing verifier artifacts");
+    }
+    init_with_security(
+      artifacts.setupBin,
+      artifacts.layoutBin,
+      toWasmSecurityLevel(security)
+    );
+    return;
+  }
+
+  if (options.setupBin && options.layoutBin) {
+    init_with_security(
+      options.setupBin,
+      options.layoutBin,
+      toWasmSecurityLevel(options.security ?? "security_80")
+    );
+    return;
+  }
+
+  throw new Error("custom verifier options must include setup/layout artifacts");
 }
 
 /**
@@ -92,7 +174,7 @@ export async function createVerifier(options?: VerifierOptions): Promise<Verifie
   await ensureInit();
 
   if (options) {
-    init_with(options.setupBin, options.layoutBin);
+    initCustomVerifier(options);
   } else {
     init_defaults();
   }

@@ -2,8 +2,8 @@ use anyhow::Context as _;
 use clap::Parser;
 use ethereum_prover::{
     Runner,
-    config::{Cli, EthProverConfig},
-    metrics,
+    config::{Cli, Command, EthProverConfig},
+    metrics, verifier_artifacts,
 };
 use smart_config::value::ExposeSecret;
 use tracing_subscriber::EnvFilter;
@@ -20,6 +20,16 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let cli = Cli::parse();
+    if let Command::GenerateVerifierArtifacts {
+        output_dir,
+        security,
+    } = &cli.command
+    {
+        verifier_artifacts::generate_verifier_artifacts(output_dir, *security)
+            .context("failed to generate verifier artifacts")?;
+        return Ok(());
+    }
+
     let config = EthProverConfig::load(&cli.config).context("failed to load config")?;
     let _sentry_guard = init_sentry(&config);
     if let Some(port) = config.prometheus_port {

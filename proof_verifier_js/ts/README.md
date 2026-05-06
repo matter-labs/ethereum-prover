@@ -27,6 +27,13 @@ if (!result.success) {
 }
 ```
 
+`createVerifier()` loads bundled 80-bit and 100-bit verifier artifacts.
+`verifyProof(handle)` automatically routes versioned proof payloads to the
+declared security level. Legacy proof payloads do not carry that metadata, so
+they are verified as 80-bit proofs. Use `verifyProofWithSecurity(handle,
+"security_100")` only when you intentionally want to override the decoded
+security level.
+
 ## Custom setup/layout
 
 Use this when you need to verify proofs against a non-default circuit version.
@@ -40,8 +47,18 @@ const verifier = await createVerifier({
 });
 ```
 
-`setupBin` is the verifier setup artifact and `layoutBin` is the circuit layout metadata.
-Both must match the proof’s circuit version.
+The legacy `setupBin` / `layoutBin` pair initializes 80-bit verification by
+default. To provide both security levels explicitly:
+
+```ts
+const verifier = await createVerifier({
+  security80: { setupBin: setup80, layoutBin: layouts80 },
+  security100: { setupBin: setup100, layoutBin: layouts100 }
+});
+```
+
+Each setup/layout pair must match the proof’s circuit version and security
+level.
 
 ## License
 

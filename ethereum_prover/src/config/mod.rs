@@ -5,7 +5,7 @@ use smart_config::{
 };
 use std::path::PathBuf;
 
-use crate::types::{CachePolicy, EthProofsSubmission, Mode, OnFailure};
+use crate::types::{CachePolicy, EthProofsSubmission, Mode, OnFailure, ProofSecurity};
 
 mod cli;
 pub use cli::{Cli, Command};
@@ -22,6 +22,11 @@ pub struct EthProverConfig {
     #[config(default_t = Mode::CpuWitness)]
     #[config(with = Serde![str])]
     pub mode: Mode,
+
+    /// Proof security level for GPU proving.
+    #[config(default_t = ProofSecurity::Security100)]
+    #[config(with = Serde![str])]
+    pub security: ProofSecurity,
 
     /// Cache policy for prover artifacts.
     #[config(default_t = CachePolicy::OnFailure)]
@@ -133,7 +138,7 @@ impl EthProverConfig {
 #[cfg(test)]
 mod tests {
     use super::EthProverConfig;
-    use crate::types::{CachePolicy, Mode, OnFailure};
+    use crate::types::{CachePolicy, Mode, OnFailure, ProofSecurity};
 
     #[test]
     fn load_config_from_yaml() {
@@ -142,6 +147,7 @@ mod tests {
         let contents = r#"
 eth_prover:
   mode: cpu_witness
+  security: security_100
   cache_policy: off
   block_mod: 10
   prover_id: 2
@@ -151,6 +157,7 @@ eth_prover:
 
         let config = EthProverConfig::load(&Some(config_path)).expect("load config");
         assert!(matches!(config.mode, Mode::CpuWitness));
+        assert!(matches!(config.security, ProofSecurity::Security100));
         assert!(matches!(config.cache_policy, CachePolicy::Off));
         assert_eq!(config.block_mod, 10);
         assert_eq!(config.prover_id, 2);

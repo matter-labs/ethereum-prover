@@ -9,6 +9,7 @@ mod common;
 use ethereum_prover::prover::cpu_witness::CpuWitnessGenerator;
 use ethereum_prover::prover::gpu_prover::Prover;
 use ethereum_prover::prover::oracle::build_oracle;
+use ethereum_prover::types::ProofSecurity;
 
 macro_rules! require_gpu_tests {
     () => {
@@ -46,7 +47,12 @@ async fn gpu_prover_from_fixture_block() {
     common::init_tracing();
     let input = common::load_fixture_input("24073997");
     let oracle = build_oracle(input.clone()).expect("build oracle");
-    let mut prover = Prover::new(common::app_bin_path().as_path(), None).expect("create prover");
+    let mut prover = Prover::new(
+        common::app_bin_path().as_path(),
+        None,
+        ProofSecurity::Security100,
+    )
+    .expect("create prover");
 
     let result = prover
         .prove(input.block_header.number, oracle)

@@ -3,6 +3,7 @@
 eth_prover:
   app_bin_path: "../artifacts/app.bin"
   mode: "gpu_prove"
+  security: "security_100"
   cache_policy: "on_failure"
   ethproofs_submission: "prod"
   block_mod: 100

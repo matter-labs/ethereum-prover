@@ -4,7 +4,11 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
-use crate::observability;
+use crate::{
+    observability,
+    prover::{airbender_compat::NewAirbenderNonDeterminismSource, proof_format::encode_proof},
+    types::ProofSecurity,
+};
 
 #[derive(Debug)]
 pub struct ProofResult {
@@ -16,6 +20,7 @@ pub struct ProofResult {
 pub struct Prover {
     app_bin_path: PathBuf,
     worker_threads: Option<usize>,
+    security: ProofSecurity,
     inner: Arc<Mutex<Option<execution_utils::unrolled_gpu::UnrolledProver>>>,
 }
 
@@ -26,16 +31,22 @@ impl std::fmt::Debug for Prover {
 }
 
 impl Prover {
-    pub fn new(app_bin_path: &Path, worker_threads: Option<usize>) -> anyhow::Result<Self> {
-        let inner = create_unrolled_prover(app_bin_path, worker_threads).with_context(|| {
-            format!(
-                "failed to create unrolled prover with app binary at {:?}",
-                app_bin_path
-            )
-        })?;
+    pub fn new(
+        app_bin_path: &Path,
+        worker_threads: Option<usize>,
+        security: ProofSecurity,
+    ) -> anyhow::Result<Self> {
+        let inner =
+            create_unrolled_prover(app_bin_path, worker_threads, security).with_context(|| {
+                format!(
+                    "failed to create unrolled prover with app binary at {:?}",
+                    app_bin_path
+                )
+            })?;
         Ok(Self {
             app_bin_path: app_bin_path.to_path_buf(),
             worker_threads,
+            security,
             inner: Arc::new(Mutex::new(Some(inner))),
         })
     }
@@ -58,6 +69,7 @@ impl Prover {
             let prover = prover.as_ref().ok_or_else(|| {
                 anyhow::anyhow!("prover is not available while processing block {block_number}")
             })?;
+            let oracle = NewAirbenderNonDeterminismSource::from(oracle);
             Ok(prover.prove(block_number, oracle))
         })
         .await;
@@ -92,6 +104,7 @@ impl Prover {
                     let replacement = create_unrolled_prover(
                         self.app_bin_path.as_path(),
                         self.worker_threads,
+                        self.security,
                     )
                     .with_context(|| {
                         format!(
@@ -108,7 +121,7 @@ impl Prover {
         };
 
         let proving_time_secs = start.elapsed().as_secs_f64();
-        let proof_bytes = bincode::serde::encode_to_vec(&proof, bincode::config::standard())
+        let proof_bytes = encode_proof(proof, self.security)
             .with_context(|| format!("failed to encode proof bytes for block {block_number}"))?;
         Ok(ProofResult {
             proof_bytes,
@@ -132,6 +145,7 @@ fn strip_bin_suffix(path: &Path) -> anyhow::Result<String> {
 fn create_unrolled_prover(
     app_bin_path: &Path,
     worker_threads: Option<usize>,
+    security: ProofSecurity,
 ) -> anyhow::Result<execution_utils::unrolled_gpu::UnrolledProver> {
     let base_path = strip_bin_suffix(app_bin_path)?;
     let mut configuration =
@@ -142,6 +156,7 @@ fn create_unrolled_prover(
     }
 
     let unrolled_prover = execution_utils::unrolled_gpu::UnrolledProver::new(
+        security.airbender_security_model(),
         &base_path,
         configuration,
         execution_utils::unrolled_gpu::UnrolledProverLevel::RecursionUnified,

@@ -41,4 +41,8 @@ if (!result.success) {
 }
 ```
 
-You can override the default `setup.bin` and `layouts.bin` in `createVerifier({ setupBin, layoutBin })`.
+`createVerifier()` loads bundled 80-bit and 100-bit setup/layout artifacts.
+You can override the default artifacts with `createVerifier({ setupBin,
+layoutBin })` for legacy 80-bit verification, or with explicit `security80` /
+`security100` artifact pairs. Versioned proof payloads route to their declared
+security level automatically; legacy payloads are treated as 80-bit proofs.

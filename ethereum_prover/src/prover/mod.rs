@@ -7,3 +7,6 @@ pub mod cpu_witness;
 pub mod gpu_prover;
 pub mod oracle;
 pub mod types;
+
+mod airbender_compat;
+mod proof_format;
