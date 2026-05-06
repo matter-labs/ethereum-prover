@@ -7,10 +7,7 @@ use execution_utils::{
     unified_circuit::compute_unified_setup_for_machine_configuration, verifier_binaries,
 };
 
-use crate::types::ProofSecurity;
-
-const LEGACY_SETUP_FILENAME: &str = "recursion_unified_setup.bin";
-const LEGACY_LAYOUTS_FILENAME: &str = "recursion_unified_layouts.bin";
+use crate::{types::ProofSecurity, verification_key_format::encode_verification_key};
 
 pub fn generate_verifier_artifacts(
     output_dir: &Path,
@@ -73,23 +70,13 @@ fn generate_artifacts_for_security(
     >(&padded_binary_u32);
 
     let paths = ArtifactPaths::new(output_dir, security);
-    write_bincode(&paths.setup, &setup, "setup")?;
-    write_bincode(&paths.layouts, &layouts, "layouts")?;
-
-    if matches!(security, ProofSecurity::Security80) {
-        // Legacy consumers still look for the unsuffixed names. Keep them as
-        // 80-bit aliases until all callers switch to explicit security labels.
-        write_bincode(
-            &output_dir.join(LEGACY_SETUP_FILENAME),
-            &setup,
-            "legacy setup",
-        )?;
-        write_bincode(
-            &output_dir.join(LEGACY_LAYOUTS_FILENAME),
-            &layouts,
-            "legacy layouts",
-        )?;
-    }
+    let verification_key = encode_verification_key(&setup, &layouts, security)
+        .with_context(|| format!("failed to encode {} verification key", security.name()))?;
+    write_bytes(
+        &paths.verification_key,
+        verification_key,
+        "verification key",
+    )?;
 
     tracing::info!(
         "Generated {} verifier artifacts in {}",
@@ -99,27 +86,20 @@ fn generate_artifacts_for_security(
     Ok(())
 }
 
-fn write_bincode<T: serde::Serialize>(path: &Path, value: &T, what: &str) -> anyhow::Result<()> {
-    let bytes = bincode::serde::encode_to_vec(value, bincode::config::standard())
-        .with_context(|| format!("failed to encode {what} artifact"))?;
+fn write_bytes(path: &Path, bytes: Vec<u8>, what: &str) -> anyhow::Result<()> {
     std::fs::write(path, bytes)
         .with_context(|| format!("failed to write {what} artifact {}", path.display()))
 }
 
 struct ArtifactPaths {
-    setup: PathBuf,
-    layouts: PathBuf,
+    verification_key: PathBuf,
 }
 
 impl ArtifactPaths {
     fn new(output_dir: &Path, security: ProofSecurity) -> Self {
         Self {
-            setup: output_dir.join(format!(
-                "recursion_unified_{}_setup.bin",
-                security.file_label()
-            )),
-            layouts: output_dir.join(format!(
-                "recursion_unified_{}_layouts.bin",
+            verification_key: output_dir.join(format!(
+                "recursion_unified_{}.vk.bin",
                 security.file_label()
             )),
         }
@@ -151,12 +131,8 @@ mod tests {
         let paths = ArtifactPaths::new(Path::new("artifacts"), ProofSecurity::Security100);
 
         assert_eq!(
-            paths.setup,
-            PathBuf::from("artifacts/recursion_unified_security_100_setup.bin")
-        );
-        assert_eq!(
-            paths.layouts,
-            PathBuf::from("artifacts/recursion_unified_security_100_layouts.bin")
+            paths.verification_key,
+            PathBuf::from("artifacts/recursion_unified_security_100.vk.bin")
         );
     }
 }

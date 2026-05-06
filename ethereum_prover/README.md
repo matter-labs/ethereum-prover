@@ -75,9 +75,16 @@ cargo run --release -p ethereum_prover -- \
   --output-dir artifacts
 ```
 
-By default the command writes explicit 80-bit and 100-bit artifacts, plus the
-legacy unsuffixed filenames as 80-bit aliases. Use `--security security_80` or
-`--security security_100` to refresh only one security level.
+By default the command writes explicit single-file 80-bit and 100-bit
+verification keys:
+
+- `recursion_unified_security_80.vk.bin`
+- `recursion_unified_security_100.vk.bin`
+
+Use `--security security_80` or `--security security_100` to refresh only one
+security level. The verifier still accepts legacy split setup/layout keys when
+they are passed explicitly, but new artifacts are generated only in the
+single-file format.
 
 ## Configuration
 

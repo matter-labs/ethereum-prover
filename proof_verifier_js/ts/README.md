@@ -14,8 +14,9 @@ yarn add @matterlabs/ethproofs-airbender-verifier
 ```ts
 import { createVerifier } from "@matterlabs/ethproofs-airbender-verifier";
 
-// Create the verifier object
-const verifier = await createVerifier();
+const verifier = await createVerifier({
+  security100: verificationKey100
+});
 
 // Deserialize the submitted proof (without `base64` encoding; e.g. format that is used on EthProofs to store proofs)
 const handle = verifier.deserializeProofBytes(proofBytes);
@@ -27,16 +28,31 @@ if (!result.success) {
 }
 ```
 
-`createVerifier()` loads bundled 80-bit and 100-bit verifier artifacts.
+`createVerifier()` requires explicit verification keys.
 `verifyProof(handle)` automatically routes versioned proof payloads to the
 declared security level. Legacy proof payloads do not carry that metadata, so
 they are verified as 80-bit proofs. Use `verifyProofWithSecurity(handle,
 "security_100")` only when you intentionally want to override the decoded
 security level.
 
-## Custom setup/layout
+## Verification keys
 
-Use this when you need to verify proofs against a non-default circuit version.
+Use single-file verification keys for new integrations:
+
+```ts
+import { createVerifier } from "proof-verifier-js";
+
+const verifier = await createVerifier({
+  security80: verificationKey80,
+  security100: verificationKey100
+});
+```
+
+Each key must match the proof’s circuit version and security level.
+
+## Legacy setup/layout
+
+Use this only when you need to verify with existing split setup/layout artifacts.
 
 ```ts
 import { createVerifier } from "proof-verifier-js";
@@ -48,12 +64,12 @@ const verifier = await createVerifier({
 ```
 
 The legacy `setupBin` / `layoutBin` pair initializes 80-bit verification by
-default. To provide both security levels explicitly:
+default. To provide legacy split artifacts for both security levels explicitly:
 
 ```ts
 const verifier = await createVerifier({
-  security80: { setupBin: setup80, layoutBin: layouts80 },
-  security100: { setupBin: setup100, layoutBin: layouts100 }
+  legacySecurity80: { setupBin: setup80, layoutBin: layouts80 },
+  legacySecurity100: { setupBin: setup100, layoutBin: layouts100 }
 });
 ```
 

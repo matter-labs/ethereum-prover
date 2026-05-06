@@ -53,12 +53,8 @@ RUN mkdir -p /out/ethereum_prover/configs /out/artifacts && \
     cp /usr/src/ethereum-prover/ethereum_prover/configs/*.yaml /out/ethereum_prover/configs/ && \
     cp /usr/src/ethereum-prover/artifacts/app.bin /out/artifacts/ && \
     cp /usr/src/ethereum-prover/artifacts/app.text /out/artifacts/ && \
-    cp /tmp/generated-verifier-artifacts/recursion_unified_setup.bin /out/artifacts/ && \
-    cp /tmp/generated-verifier-artifacts/recursion_unified_layouts.bin /out/artifacts/ && \
-    cp /tmp/generated-verifier-artifacts/recursion_unified_security_80_setup.bin /out/artifacts/ && \
-    cp /tmp/generated-verifier-artifacts/recursion_unified_security_80_layouts.bin /out/artifacts/ && \
-    cp /tmp/generated-verifier-artifacts/recursion_unified_security_100_setup.bin /out/artifacts/ && \
-    cp /tmp/generated-verifier-artifacts/recursion_unified_security_100_layouts.bin /out/artifacts/
+    cp /tmp/generated-verifier-artifacts/recursion_unified_security_80.vk.bin /out/artifacts/ && \
+    cp /tmp/generated-verifier-artifacts/recursion_unified_security_100.vk.bin /out/artifacts/
 
 FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
 

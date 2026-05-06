@@ -32,17 +32,21 @@ yarn dev
 ```ts
 import { createVerifier } from "@matterlabs/ethproofs-airbender-verifier";
 
-const verifier = await createVerifier();
+const verifier = await createVerifier({
+  security100: verificationKey100
+});
 const proof = verifier.deserializeProofBytes(proofBytes);
 const result = verifier.verifyProof(proof);
 
 if (!result.success) {
-  console.error(result.errors);
+  console.error(result.error);
 }
 ```
 
-`createVerifier()` loads bundled 80-bit and 100-bit setup/layout artifacts.
-You can override the default artifacts with `createVerifier({ setupBin,
-layoutBin })` for legacy 80-bit verification, or with explicit `security80` /
-`security100` artifact pairs. Versioned proof payloads route to their declared
-security level automatically; legacy payloads are treated as 80-bit proofs.
+`createVerifier()` requires explicit verification keys. New callers should pass
+single-file verification keys via `security80` and/or `security100`. Existing
+split setup/layout artifacts can still be passed explicitly with `setupBin` /
+`layoutBin` for one security level, or with `legacySecurity80` /
+`legacySecurity100` for both levels. Versioned proof payloads route to their
+declared security level automatically; legacy payloads are treated as 80-bit
+proofs.

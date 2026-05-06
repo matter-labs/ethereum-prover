@@ -22,6 +22,7 @@ pub mod prover;
 pub(crate) mod tasks;
 pub mod types;
 pub(crate) mod utils;
+pub(crate) mod verification_key_format;
 pub mod verifier_artifacts;
 
 #[derive(Debug, Default)]

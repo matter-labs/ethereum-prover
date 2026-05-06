@@ -5,8 +5,8 @@
         <p class="eyebrow">Proof Verifier</p>
         <h1>Verify ethproofs in your browser.</h1>
         <p class="subtitle">
-          Provide a URL to a base64+gzip+bincode proof blob. We fetch it, unpack it, and verify it
-          with the bundled setup/layout artifacts.
+          Provide a gzip+bincode proof blob and matching single-file verification key. The proof is
+          unpacked and verified locally in WASM.
         </p>
       </div>
       <div class="orb" aria-hidden="true"></div>
@@ -27,8 +27,26 @@
         </button>
       </div>
 
+      <label class="label" for="vk-100-file">100-bit Verification Key</label>
+      <input
+        id="vk-100-file"
+        class="input file-input"
+        type="file"
+        accept=".bin"
+        @change="onSecurity100KeyChange"
+      />
+
+      <label class="label" for="vk-80-file">80-bit Verification Key</label>
+      <input
+        id="vk-80-file"
+        class="input file-input"
+        type="file"
+        accept=".bin"
+        @change="onSecurity80KeyChange"
+      />
+
       <p class="hint">
-        Tip: upload a gzip+bincode proof blob (binary).
+        Tip: upload at least one `recursion_unified_*.vk.bin` key matching the proof security level.
       </p>
 
       <section class="status" :data-state="status.state">
@@ -56,6 +74,8 @@ import { ref } from "vue";
 import { createVerifier, type VerificationResult } from "@matterlabs/ethproofs-airbender-verifier";
 
 const proofFile = ref<File | null>(null);
+const security80KeyFile = ref<File | null>(null);
+const security100KeyFile = ref<File | null>(null);
 const busy = ref(false);
 
 const status = ref({
@@ -65,8 +85,6 @@ const status = ref({
   error: null as string | null
 });
 
-const verifierPromise = createVerifier();
-
 function setStatus(update: Partial<typeof status.value>) {
   status.value = { ...status.value, ...update };
 }
@@ -74,6 +92,20 @@ function setStatus(update: Partial<typeof status.value>) {
 function onFileChange(event: Event) {
   const target = event.target as HTMLInputElement;
   proofFile.value = target.files && target.files[0] ? target.files[0] : null;
+}
+
+function onSecurity80KeyChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  security80KeyFile.value = target.files && target.files[0] ? target.files[0] : null;
+}
+
+function onSecurity100KeyChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  security100KeyFile.value = target.files && target.files[0] ? target.files[0] : null;
+}
+
+async function readFileBytes(file: File): Promise<Uint8Array> {
+  return new Uint8Array(await file.arrayBuffer());
 }
 
 async function verify() {
@@ -87,6 +119,16 @@ async function verify() {
     return;
   }
 
+  if (!security80KeyFile.value && !security100KeyFile.value) {
+    setStatus({
+      state: "error",
+      label: "Missing key",
+      meta: "Select a verification key to continue.",
+      error: "No verification key selected."
+    });
+    return;
+  }
+
   busy.value = true;
   setStatus({
     state: "loading",
@@ -96,7 +138,19 @@ async function verify() {
   });
 
   try {
-    const verifier = await verifierPromise;
+    const security80 = security80KeyFile.value
+      ? await readFileBytes(security80KeyFile.value)
+      : null;
+    const security100 = security100KeyFile.value
+      ? await readFileBytes(security100KeyFile.value)
+      : null;
+    const verifier = await createVerifier(
+      security80 && security100
+        ? { security80, security100 }
+        : security80
+          ? { security80 }
+          : { security100: security100 as Uint8Array }
+    );
     setStatus({
       state: "loading",
       label: "Verifying",
@@ -104,8 +158,7 @@ async function verify() {
       error: null
     });
 
-    const buffer = await proofFile.value.arrayBuffer();
-    const handle = verifier.deserializeProofBytes(new Uint8Array(buffer));
+    const handle = verifier.deserializeProofBytes(await readFileBytes(proofFile.value));
     const result: VerificationResult = verifier.verifyProof(handle);
 
     if (result.success) {

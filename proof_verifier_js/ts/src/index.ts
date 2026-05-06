@@ -1,12 +1,8 @@
 import init, {
   deserialize_proof_bytes,
-  init_defaults,
-  init_with_all,
-  init_with_security,
   InitOutput,
   SecurityLevel as WasmSecurityLevel,
-  verify_proof,
-  verify_proof_with_security
+  WasmVerifier
 } from "../wasm/pkg/proof_verifier_wasm";
 
 /**
@@ -26,6 +22,8 @@ export type VerificationResult = {
 
 export type ProofSecurity = "security_80" | "security_100";
 
+export type UnifiedVerificationKey = Uint8Array;
+
 export type VerifierArtifactPair = {
   /** Binary setup data that defines the verifier's cryptographic setup. */
   setupBin: Uint8Array;
@@ -33,24 +31,51 @@ export type VerifierArtifactPair = {
   layoutBin: Uint8Array;
 };
 
+type UnifiedVerifierOptions = (
+  | { security80: UnifiedVerificationKey; security100?: UnifiedVerificationKey }
+  | { security80?: UnifiedVerificationKey; security100: UnifiedVerificationKey }
+) & {
+  setupBin?: never;
+  layoutBin?: never;
+  security?: never;
+  legacySecurity80?: never;
+  legacySecurity100?: never;
+};
+
+type LegacySingleVerifierOptions = {
+  /** Legacy single artifact pair. Defaults to 80-bit security. */
+  setupBin: Uint8Array;
+  /** Legacy single artifact pair. Defaults to 80-bit security. */
+  layoutBin: Uint8Array;
+  /** Security level for the legacy single artifact pair. */
+  security?: ProofSecurity;
+  security80?: never;
+  security100?: never;
+  legacySecurity80?: never;
+  legacySecurity100?: never;
+};
+
+type LegacyPairVerifierOptions = (
+  | { legacySecurity80: VerifierArtifactPair; legacySecurity100?: VerifierArtifactPair }
+  | { legacySecurity80?: VerifierArtifactPair; legacySecurity100: VerifierArtifactPair }
+) & {
+  setupBin?: never;
+  layoutBin?: never;
+  security?: never;
+  security80?: never;
+  security100?: never;
+};
+
 /**
- * Optional verifier configuration for custom setup and layout for circuits.
+ * Verifier configuration with explicit verification keys.
  *
  * These correspond to the precomputed verifier artifacts used by the
  * Ethereum STF ZK proof system and must match the proof's circuit version.
  */
-export type VerifierOptions = {
-  /** Legacy single artifact pair. Defaults to 80-bit security. */
-  setupBin?: Uint8Array;
-  /** Legacy single artifact pair. Defaults to 80-bit security. */
-  layoutBin?: Uint8Array;
-  /** Security level for the legacy single artifact pair. */
-  security?: ProofSecurity;
-  /** 80-bit verifier artifacts. */
-  security80?: VerifierArtifactPair;
-  /** 100-bit verifier artifacts. */
-  security100?: VerifierArtifactPair;
-};
+export type VerifierOptions =
+  | UnifiedVerifierOptions
+  | LegacySingleVerifierOptions
+  | LegacyPairVerifierOptions;
 
 /**
  * Verifier API for Ethereum STF ZK proofs submitted to EthProofs.
@@ -113,71 +138,86 @@ function resultFromWasm(result: unknown): VerificationResult {
 }
 
 class VerifierImpl implements Verifier {
+  constructor(private readonly inner: WasmVerifier) {}
+
   deserializeProofBytes(proofBytes: Uint8Array): ProofHandle {
     return deserialize_proof_bytes(proofBytes);
   }
 
   verifyProof(handle: ProofHandle): VerificationResult {
-    return resultFromWasm(verify_proof(handle));
+    return resultFromWasm(this.inner.verifyProof(handle));
   }
 
   verifyProofWithSecurity(handle: ProofHandle, security: ProofSecurity): VerificationResult {
-    return resultFromWasm(verify_proof_with_security(handle, toWasmSecurityLevel(security)));
+    return resultFromWasm(
+      this.inner.verifyProofWithSecurity(handle, toWasmSecurityLevel(security))
+    );
   }
 
 }
 
-function initCustomVerifier(options: VerifierOptions): void {
+function createWasmVerifier(options: VerifierOptions): WasmVerifier {
   if (options.security80 && options.security100) {
-    init_with_all(
-      options.security80.setupBin,
-      options.security80.layoutBin,
-      options.security100.setupBin,
-      options.security100.layoutBin
-    );
-    return;
+    return WasmVerifier.fromKeys(options.security80, options.security100);
   }
 
   if (options.security80 || options.security100) {
     const security = options.security100 ? "security_100" : "security_80";
-    const artifacts = options.security100 ?? options.security80;
-    if (!artifacts) {
-      throw new Error("missing verifier artifacts");
+    const verificationKey = options.security100 ?? options.security80;
+    if (!verificationKey) {
+      throw new Error("missing verification key");
     }
-    init_with_security(
-      artifacts.setupBin,
-      artifacts.layoutBin,
+    return WasmVerifier.fromKeyForSecurity(
+      verificationKey,
       toWasmSecurityLevel(security)
     );
-    return;
   }
 
   if (options.setupBin && options.layoutBin) {
-    init_with_security(
+    return WasmVerifier.fromLegacyKey(
       options.setupBin,
       options.layoutBin,
       toWasmSecurityLevel(options.security ?? "security_80")
     );
-    return;
   }
 
-  throw new Error("custom verifier options must include setup/layout artifacts");
+  if (options.legacySecurity80 && options.legacySecurity100) {
+    return WasmVerifier.fromLegacyKeys(
+      options.legacySecurity80.setupBin,
+      options.legacySecurity80.layoutBin,
+      options.legacySecurity100.setupBin,
+      options.legacySecurity100.layoutBin
+    );
+  }
+
+  if (options.legacySecurity80 || options.legacySecurity100) {
+    const security = options.legacySecurity100 ? "security_100" : "security_80";
+    const artifacts = options.legacySecurity100 ?? options.legacySecurity80;
+    if (!artifacts) {
+      throw new Error("missing legacy verifier artifacts");
+    }
+    return WasmVerifier.fromLegacyKey(
+      artifacts.setupBin,
+      artifacts.layoutBin,
+      toWasmSecurityLevel(security)
+    );
+  }
+
+  throw new Error("verifier options must include explicit verification keys");
 }
 
 /**
  * Initializes the WASM dependency and creates a Verifier instance.
  * 
- * @param options Optional verifier configuration for custom setup and layout for circuits.
+ * @param options Verifier configuration with explicit verification keys.
  * @returns A Promise that resolves to a Verifier instance.
  */
-export async function createVerifier(options?: VerifierOptions): Promise<Verifier> {
+export async function createVerifier(options: VerifierOptions): Promise<Verifier> {
   await ensureInit();
 
-  if (options) {
-    initCustomVerifier(options);
-  } else {
-    init_defaults();
+  if (!options) {
+    throw new Error("verifier options must include explicit verification keys");
   }
 
-  return new VerifierImpl();
+  return new VerifierImpl(createWasmVerifier(options));
 }

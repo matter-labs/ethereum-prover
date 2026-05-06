@@ -36,8 +36,8 @@ EOF
 mkdir -p "${ARTIFACTS_DIR}"
 
 # zksync-os remains the source of the executable we prove. The recursion
-# verifier artifacts are generated from ethereum_prover's current Airbender
-# dependency so 80-bit and 100-bit security use fresh matching setup/layout data.
+# verification keys are generated from ethereum_prover's current Airbender
+# dependency so 80-bit and 100-bit security use fresh matching single-file VKs.
 cargo run --manifest-path "${REPO_ROOT}/Cargo.toml" --release -p ethereum_prover -- \
     generate-verifier-artifacts \
     --output-dir "${ARTIFACTS_DIR}"

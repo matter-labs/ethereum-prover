@@ -44,7 +44,7 @@ fn decode_enveloped_proof<P: DeserializeOwned>(bytes: &[u8]) -> Result<DecodedPr
             encoded.version
         ));
     }
-    let security = SecurityLevel::from_proof_wire_value(encoded.security)?;
+    let security = SecurityLevel::from_wire_value(encoded.security)?;
     Ok(DecodedProof {
         proof: encoded.proof,
         security,
