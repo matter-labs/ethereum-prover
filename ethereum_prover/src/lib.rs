@@ -8,6 +8,7 @@ use crate::{
     cache::CacheStorage,
     clients::ethproofs::EthproofsClient,
     config::{Cli, Command, EthProverConfig},
+    proof_output::ProofOutput,
     prover::{cpu_witness::CpuWitnessGenerator, gpu_prover::Prover},
     types::Mode,
 };
@@ -18,6 +19,7 @@ pub(crate) mod cache;
 pub(crate) mod clients;
 pub mod metrics;
 pub(crate) mod observability;
+pub(crate) mod proof_output;
 pub mod prover;
 pub(crate) mod tasks;
 pub mod types;
@@ -109,6 +111,7 @@ impl Runner {
                 tracing::info!("Creating GPU prover");
                 let app_bin_path = config.app_bin_path.clone();
                 let security = config.security;
+                let proof_output = config.proof_output_dir.clone().map(ProofOutput::new);
                 let gpu_prover = observability::spawn_blocking_on_current_hub(move || {
                     Prover::new(app_bin_path.as_path(), None, security)
                         .context("failed to create prover")
@@ -121,6 +124,8 @@ impl Runner {
                     gpu_prover,
                     block_stream_receiver,
                     config.on_failure,
+                    proof_output,
+                    security,
                 );
                 join_set.spawn(observability::bind_task("gpu_prove", task.run()));
                 command_receiver

@@ -33,6 +33,10 @@ pub struct EthProverConfig {
     #[config(with = Serde![str])]
     pub cache_policy: CachePolicy,
 
+    /// Optional directory for gzip proof files saved for manual verification.
+    #[config(default_t = None)]
+    pub proof_output_dir: Option<PathBuf>,
+
     /// EthProofs submission target.
     #[config(default_t = EthProofsSubmission::Off)]
     #[config(with = Serde![str])]
@@ -149,6 +153,7 @@ eth_prover:
   mode: cpu_witness
   security: security_100
   cache_policy: off
+  proof_output_dir: .cache/proofs
   block_mod: 10
   prover_id: 2
   on_failure: exit
@@ -159,6 +164,10 @@ eth_prover:
         assert!(matches!(config.mode, Mode::CpuWitness));
         assert!(matches!(config.security, ProofSecurity::Security100));
         assert!(matches!(config.cache_policy, CachePolicy::Off));
+        assert_eq!(
+            config.proof_output_dir.as_deref(),
+            Some(std::path::Path::new(".cache/proofs"))
+        );
         assert_eq!(config.block_mod, 10);
         assert_eq!(config.prover_id, 2);
         assert!(matches!(config.on_failure, OnFailure::Exit));

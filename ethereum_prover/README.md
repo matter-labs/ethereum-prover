@@ -102,6 +102,8 @@ eth_prover:
   mode: "cpu_witness"
   security: "security_100"
   cache_policy: "on_failure"
+  # Optional: save gzip proof files for manual verifier testing.
+  # proof_output_dir: ".cache/proofs"
   block_mod: 1
   prover_id: 0
   on_failure: "exit"
@@ -120,6 +122,7 @@ All options below can be set in YAML under `eth_prover:` or via environment vari
 - `mode` (env: `eth_prover_mode`) — `cpu_witness` or `gpu_prove`
 - `security` (env: `eth_prover_security`) — `security_100` or `security_80`; ignored in `cpu_witness` mode
 - `cache_policy` (env: `eth_prover_cache_policy`) — `off`, `on_failure`, `always`
+- `proof_output_dir` (env: `eth_prover_proof_output_dir`) — optional directory for gzip proof files
 - `ethproofs_submission` (env: `eth_prover_ethproofs_submission`) — `off`, `staging`, `prod`
 - `block_mod` (env: `eth_prover_block_mod`)
 - `prover_id` (env: `eth_prover_prover_id`)
@@ -134,6 +137,25 @@ Reusable configs live in `ethereum_prover/configs/`:
 - `ethproofs_prod.yaml`: production EthProofs submission defaults
 - `ethproofs_staging.yaml`: staging EthProofs submission defaults
 - `local_debug.yaml`: local debug defaults (CPU witness, single-block friendly)
+
+### Manual proof files
+
+Set `proof_output_dir` to save generated proofs for local verifier testing:
+
+```yaml
+eth_prover:
+  mode: "gpu_prove"
+  proof_output_dir: ".cache/proofs"
+```
+
+When enabled, successful GPU proofs are written as gzip-compressed binary files:
+
+- `.cache/proofs/<block>/proof_80.bin`
+- `.cache/proofs/<block>/proof_100.bin`
+
+These files are the proof payload format consumed by the JS/WASM verifier demo.
+They are **not** base64-encoded; base64 is only used when sending the same gzip
+payload through the EthProofs HTTP API.
 
 ## Testing
 

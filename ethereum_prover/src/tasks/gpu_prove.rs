@@ -1,9 +1,10 @@
 use crate::{
     metrics::{InflightGuard, METRICS},
     observability,
+    proof_output::ProofOutput,
     prover::{gpu_prover::ProofResult, oracle::build_oracle, types::EthBlockInput},
     tasks::CalculationUpdate,
-    types::OnFailure,
+    types::{OnFailure, ProofSecurity},
 };
 use anyhow::Context as _;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
@@ -16,6 +17,8 @@ pub(crate) struct GpuProveTask {
     witness_receiver: Receiver<EthBlockInput>,
     command_sender: Sender<CalculationUpdate>,
     on_failure: OnFailure,
+    proof_output: Option<ProofOutput>,
+    security: ProofSecurity,
 }
 
 impl GpuProveTask {
@@ -23,6 +26,8 @@ impl GpuProveTask {
         gpu_prover: Prover,
         witness_receiver: Receiver<EthBlockInput>,
         on_failure: OnFailure,
+        proof_output: Option<ProofOutput>,
+        security: ProofSecurity,
     ) -> (Self, Receiver<CalculationUpdate>) {
         let (command_sender, command_receiver) = channel(10);
         (
@@ -31,6 +36,8 @@ impl GpuProveTask {
                 witness_receiver,
                 command_sender,
                 on_failure,
+                proof_output,
+                security,
             },
             command_receiver,
         )
@@ -123,9 +130,23 @@ impl GpuProveTask {
         })?;
 
         tracing::info!("Proving block {} on GPU", block_number);
-        self.gpu_prover
+        let proof_result = self
+            .gpu_prover
             .prove(block_number, oracle)
             .await
-            .with_context(|| format!("failed to prove block {block_number}"))
+            .with_context(|| format!("failed to prove block {block_number}"))?;
+
+        if let Some(proof_output) = &self.proof_output {
+            let proof_path = proof_output
+                .save_gzipped_proof(block_number, self.security, &proof_result.proof_bytes)
+                .with_context(|| format!("failed to save proof for block {block_number}"))?;
+            tracing::info!(
+                "Saved gzip proof for block {} to {}",
+                block_number,
+                proof_path.display()
+            );
+        }
+
+        Ok(proof_result)
     }
 }

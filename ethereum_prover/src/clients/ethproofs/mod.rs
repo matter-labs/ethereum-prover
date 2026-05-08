@@ -1,13 +1,10 @@
 use anyhow::Context as _;
 use base64::Engine;
-use flate2::Compression;
-use flate2::write::GzEncoder;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use std::io::Write;
 use std::time::Duration;
 
-use crate::metrics::METRICS;
+use crate::{metrics::METRICS, proof_output::gzip_proof_bytes};
 const ETHPROOFS_STAGING_URL: &str = "https://staging--ethproofs.netlify.app/api/v0/";
 const ETHPROOFS_PRODUCTION_URL: &str = "https://ethproofs.netlify.app/api/v0/";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
@@ -169,9 +166,7 @@ pub struct ProofRequest {
 }
 
 fn encode_proof(proof_bytes: &[u8]) -> anyhow::Result<String> {
-    let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
-    encoder.write_all(proof_bytes)?;
-    let compressed = encoder.finish()?;
+    let compressed = gzip_proof_bytes(proof_bytes)?;
     let encoded = base64::engine::general_purpose::STANDARD.encode(compressed);
     Ok(encoded)
 }
