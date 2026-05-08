@@ -27,26 +27,17 @@
         </button>
       </div>
 
-      <label class="label" for="vk-100-file">100-bit Verification Key</label>
+      <label class="label" for="vk-file">Verification Key</label>
       <input
-        id="vk-100-file"
+        id="vk-file"
         class="input file-input"
         type="file"
         accept=".bin"
-        @change="onSecurity100KeyChange"
-      />
-
-      <label class="label" for="vk-80-file">80-bit Verification Key</label>
-      <input
-        id="vk-80-file"
-        class="input file-input"
-        type="file"
-        accept=".bin"
-        @change="onSecurity80KeyChange"
+        @change="onVerificationKeyChange"
       />
 
       <p class="hint">
-        Tip: upload at least one `recursion_unified_*.vk.bin` key matching the proof security level.
+        Tip: upload the `recursion_unified_*.vk.bin` key that matches the proof security level.
       </p>
 
       <section class="status" :data-state="status.state">
@@ -74,8 +65,7 @@ import { ref } from "vue";
 import { createVerifier, type VerificationResult } from "@matterlabs/ethproofs-airbender-verifier";
 
 const proofFile = ref<File | null>(null);
-const security80KeyFile = ref<File | null>(null);
-const security100KeyFile = ref<File | null>(null);
+const verificationKeyFile = ref<File | null>(null);
 const busy = ref(false);
 
 const status = ref({
@@ -94,14 +84,9 @@ function onFileChange(event: Event) {
   proofFile.value = target.files && target.files[0] ? target.files[0] : null;
 }
 
-function onSecurity80KeyChange(event: Event) {
+function onVerificationKeyChange(event: Event) {
   const target = event.target as HTMLInputElement;
-  security80KeyFile.value = target.files && target.files[0] ? target.files[0] : null;
-}
-
-function onSecurity100KeyChange(event: Event) {
-  const target = event.target as HTMLInputElement;
-  security100KeyFile.value = target.files && target.files[0] ? target.files[0] : null;
+  verificationKeyFile.value = target.files && target.files[0] ? target.files[0] : null;
 }
 
 async function readFileBytes(file: File): Promise<Uint8Array> {
@@ -119,7 +104,7 @@ async function verify() {
     return;
   }
 
-  if (!security80KeyFile.value && !security100KeyFile.value) {
+  if (!verificationKeyFile.value) {
     setStatus({
       state: "error",
       label: "Missing key",
@@ -138,19 +123,8 @@ async function verify() {
   });
 
   try {
-    const security80 = security80KeyFile.value
-      ? await readFileBytes(security80KeyFile.value)
-      : null;
-    const security100 = security100KeyFile.value
-      ? await readFileBytes(security100KeyFile.value)
-      : null;
-    const verifier = await createVerifier(
-      security80 && security100
-        ? { security80, security100 }
-        : security80
-          ? { security80 }
-          : { security100: security100 as Uint8Array }
-    );
+    const verificationKey = await readFileBytes(verificationKeyFile.value);
+    const verifier = await createVerifier({ verificationKey });
     setStatus({
       state: "loading",
       label: "Verifying",

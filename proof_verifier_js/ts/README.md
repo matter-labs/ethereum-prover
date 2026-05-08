@@ -15,7 +15,7 @@ yarn add @matterlabs/ethproofs-airbender-verifier
 import { createVerifier } from "@matterlabs/ethproofs-airbender-verifier";
 
 const verifier = await createVerifier({
-  security100: verificationKey100
+  verificationKey
 });
 
 // Deserialize the submitted proof (without `base64` encoding; e.g. format that is used on EthProofs to store proofs)
@@ -29,11 +29,9 @@ if (!result.success) {
 ```
 
 `createVerifier()` requires explicit verification keys.
-`verifyProof(handle)` automatically routes versioned proof payloads to the
-declared security level. Legacy proof payloads do not carry that metadata, so
-they are verified as 80-bit proofs. Use `verifyProofWithSecurity(handle,
-"security_100")` only when you intentionally want to override the decoded
-security level.
+`verifyProof(handle)` requires the proof security level to match the supplied
+verification key. Legacy proof payloads do not carry that metadata, so they are
+verified as 80-bit proofs.
 
 ## Verification keys
 
@@ -43,16 +41,16 @@ Use single-file verification keys for new integrations:
 import { createVerifier } from "proof-verifier-js";
 
 const verifier = await createVerifier({
-  security80: verificationKey80,
-  security100: verificationKey100
+  verificationKey
 });
 ```
 
-Each key must match the proof’s circuit version and security level.
+The key must match the proof’s circuit version and security level.
 
 ## Legacy setup/layout
 
-Use this only when you need to verify with existing split setup/layout artifacts.
+Use this only when you need to verify with existing 80-bit split setup/layout
+artifacts.
 
 ```ts
 import { createVerifier } from "proof-verifier-js";
@@ -63,18 +61,8 @@ const verifier = await createVerifier({
 });
 ```
 
-The legacy `setupBin` / `layoutBin` pair initializes 80-bit verification by
-default. To provide legacy split artifacts for both security levels explicitly:
-
-```ts
-const verifier = await createVerifier({
-  legacySecurity80: { setupBin: setup80, layoutBin: layouts80 },
-  legacySecurity100: { setupBin: setup100, layoutBin: layouts100 }
-});
-```
-
-Each setup/layout pair must match the proof’s circuit version and security
-level.
+The legacy `setupBin` / `layoutBin` pair initializes 80-bit verification only.
+Use the single-file VK format for 100-bit verification.
 
 ## License
 
