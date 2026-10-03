@@ -1,6 +1,6 @@
 {
   "name": "@matterlabs/ethproofs-airbender-verifier",
-  "version": "1.2.0",
+  "version": "0.2.0",
   "description": "Airbender ZK Proof Verifier for EthProofs",
   "license": "(MIT OR Apache-2.0)",
   "repository": {
