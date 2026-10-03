@@ -1,7 +1,6 @@
-import createBindings from "../wasm/pkg/proof_verifier_wasm.js";
-import { loadWasmBytes } from "./load-wasm";
+import { WasmVerifier, deserialize_proof_bytes } from "../wasm/pkg/proof_verifier_wasm.js";
 
-/** Opaque proof owned by the verifier that deserialized it. */
+/** Decoded proof; release it with `free()`. */
 export type ProofHandle = { free(): void };
 
 export type VerificationResult = {
@@ -21,27 +20,14 @@ export type VerifierOptions = {
 export type Verifier = {
   /** Decode a gzip EPROOF01 v2 proof. Throws on invalid input. */
   deserializeProofBytes(proofBytes: Uint8Array): ProofHandle;
-  /** A trap returns failure and invalidates all handles from that instance. */
   verifyProof(handle: ProofHandle, expectedOutput?: Uint32Array): VerificationResult;
-  /** Release the verifier and invalidate its handles. */
+  /** Release the verifier. */
   free(): void;
 };
 
-type Bindings = ReturnType<typeof createBindings>;
-type Instance = {
-  bindings: Bindings;
-  verifier: ReturnType<Bindings["WasmVerifier"]["fromKey"]>;
-  active: boolean;
-};
-type HandleState = {
-  instance: Instance;
-  inner: ReturnType<Bindings["deserialize_proof_bytes"]>;
-};
+type Proof = ReturnType<typeof deserialize_proof_bytes>;
 
-// Compiled once when the package is imported, so instances can be created synchronously.
-const wasmModule = await WebAssembly.compile(await loadWasmBytes());
-
-function failure(error: unknown) {
+function failure(error: unknown): VerificationResult {
   return {
     success: false,
     error: error instanceof Error ? error.message : String(error),
@@ -49,84 +35,47 @@ function failure(error: unknown) {
   };
 }
 
+class Handle implements ProofHandle {
+  constructor(public proof?: Proof) {}
+
+  free(): void {
+    this.proof?.free();
+    this.proof = undefined;
+  }
+}
+
 class VerifierImpl implements Verifier {
-  private instance?: Instance;
-  private closed = false;
-  private readonly handles = new WeakMap<ProofHandle, HandleState>();
+  private inner?: WasmVerifier;
 
-  constructor(private readonly module: WebAssembly.Module, private readonly key: Uint8Array) {
-    this.current();
-  }
-
-  private current(): Instance {
-    if (this.closed) throw new Error("verifier has been freed");
-    if (!this.instance) {
-      const bindings = createBindings();
-      bindings.initSync({ module: this.module });
-      this.instance = { bindings, verifier: bindings.WasmVerifier.fromKey(this.key), active: true };
-    }
-    return this.instance;
-  }
-
-  private abandonOnTrap(error: unknown, instance: Instance) {
-    if (error instanceof WebAssembly.RuntimeError) {
-      instance.active = false;
-      this.instance = undefined;
-    }
+  constructor(key: Uint8Array) {
+    this.inner = WasmVerifier.fromKey(key);
   }
 
   deserializeProofBytes(proofBytes: Uint8Array): ProofHandle {
-    const instance = this.current();
-    try {
-      const state: HandleState = { instance, inner: instance.bindings.deserialize_proof_bytes(proofBytes) };
-      const handle = { free: () => this.freeHandle(handle) };
-      this.handles.set(handle, state);
-      return handle;
-    } catch (error) {
-      this.abandonOnTrap(error, instance);
-      throw new Error(failure(error).error);
-    }
-  }
-
-  private freeHandle(handle: ProofHandle): void {
-    const state = this.handles.get(handle);
-    this.handles.delete(handle);
-    if (state?.instance.active) {
-      try { state.inner.free(); }
-      catch (error) { this.abandonOnTrap(error, state.instance); throw error; }
-    }
+    if (!this.inner) throw new Error("verifier has been freed");
+    return new Handle(deserialize_proof_bytes(proofBytes));
   }
 
   verifyProof(handle: ProofHandle, expectedOutput?: Uint32Array): VerificationResult {
-    const state = this.handles.get(handle);
-    if (!state?.inner || !state.instance.active || this.closed) {
-      return failure("proof handle is foreign, freed, or invalidated; deserialize the proof again");
-    }
-    const { instance, inner } = state;
+    if (!this.inner) return failure("verifier has been freed");
+    if (!(handle instanceof Handle) || !handle.proof) return failure("proof handle has been freed");
     try {
-      const result = instance.verifier.verifyProof(inner, expectedOutput);
+      const result = this.inner.verifyProof(handle.proof, expectedOutput);
       const output = { success: result.success, error: result.error() ?? null, publicOutput: result.publicOutput ?? null };
       result.free();
       return output;
     } catch (error) {
-      this.abandonOnTrap(error, instance);
       return failure(error);
     }
   }
 
   free(): void {
-    if (this.closed) return;
-    this.closed = true;
-    const instance = this.instance;
-    this.instance = undefined;
-    if (instance) {
-      instance.active = false;
-      instance.verifier.free();
-    }
+    this.inner?.free();
+    this.inner = undefined;
   }
 }
 
-/** Create an isolated verifier with a trusted v3 key (the WASM module is compiled at import). */
+/** Create a verifier for a trusted v3 key. */
 export async function createVerifier(options: VerifierOptions): Promise<Verifier> {
   if (!options || "setupBin" in options || "layoutBin" in options) {
     throw new Error("legacy split keys are not supported; supply verificationKey (EVKEY001 v2)");
@@ -134,16 +83,16 @@ export async function createVerifier(options: VerifierOptions): Promise<Verifier
   if (!(options.verificationKey instanceof Uint8Array)) {
     throw new Error("verificationKey must be a Uint8Array containing an EVKEY001 v2 key");
   }
-  return new VerifierImpl(wasmModule, new Uint8Array(options.verificationKey));
+  return new VerifierImpl(options.verificationKey);
 }
 
 /**
  * Synchronous one-shot verification for callers with a `verify_stark(proof, vk)` contract,
  * such as EthProofs. Returns whether the gzip EPROOF01 v2 proof verifies against the
- * EVKEY001 v2 key; malformed keys or proofs throw. Each call uses a fresh WASM instance.
+ * EVKEY001 v2 key; malformed keys or proofs throw.
  */
 export function verify_stark(proofBytes: Uint8Array, verificationKey: Uint8Array): boolean {
-  const verifier = new VerifierImpl(wasmModule, new Uint8Array(verificationKey));
+  const verifier = new VerifierImpl(verificationKey);
   try {
     const handle = verifier.deserializeProofBytes(proofBytes);
     try {

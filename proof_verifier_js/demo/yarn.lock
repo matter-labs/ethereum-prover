@@ -148,7 +148,7 @@
   integrity sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==
 
 "@matterlabs/ethproofs-airbender-verifier@file:../ts":
-  version "1.0.0"
+  version "1.2.0"
 
 "@rollup/rollup-android-arm-eabi@4.55.1":
   version "4.55.1"
@@ -483,6 +483,11 @@ typescript@^5.4.5:
   version "5.9.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.9.3.tgz#5b4f59e15310ab17a216f5d6cf53ee476ede670f"
   integrity sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==
+
+vite-plugin-wasm@^3.6.0:
+  version "3.6.0"
+  resolved "https://registry.yarnpkg.com/vite-plugin-wasm/-/vite-plugin-wasm-3.6.0.tgz#e67a544e22fffd4a6b5f925c47fd90a5530d277c"
+  integrity sha512-mL/QPziiIA4RAA6DkaZZzOstdwbW5jO4Vz7Zenj0wieKWBlNvIvX5L5ljum9lcUX0ShNfBgCNLKTjNkRVVqcsw==
 
 vite@^5.4.3:
   version "5.4.21"

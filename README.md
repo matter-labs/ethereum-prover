@@ -7,7 +7,7 @@ follow the chain tip, process a block range, archive proofs, and submit them to
 EthProofs through a durable outbox.
 
 The [TypeScript/WASM verifier](proof_verifier_js/README.md), package version
-**1.0.0**, verifies gzip `EPROOF01` v2 proofs against a trusted `EVKEY001` v2 key.
+**1.2.0**, verifies gzip `EPROOF01` v2 proofs against a trusted `EVKEY001` v2 key.
 Version 1/security-80 proofs need the old package and its matching artifacts.
 
 ## Checkout and build

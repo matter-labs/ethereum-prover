@@ -6,7 +6,7 @@ guest. Version 1 and security-80 proofs need the old 0.x package; version 1.0.0
 removes legacy split-key options.
 
 - `wasm/`: bounded decoding and unified proof verification.
-- `ts/`: the ESM package, isolated WASM instances, and trap recovery.
+- `ts/`: the ESM package; the WASM is an ES module import (wasm-pack `bundler` target).
 - `demo/`: a Vue app for proof/key uploads and optional expected-output checks.
 
 ## Build and test the package
@@ -44,10 +44,8 @@ try {
 ```
 
 `publicOutput` contains eight verified u32 words on success and is null on failure.
-Decode errors throw; verification traps return failure and invalidate that
-instance's handles. Deserializing another proof through the same verifier creates
-a fresh instance. Other verifiers remain usable. See the [package README](ts/README.md)
-for ownership and recovery details.
+Decode errors throw; verification errors, including WASM traps, return failure.
+All verifiers share one WASM instance. See the [package README](ts/README.md).
 
 ## Demo
 
