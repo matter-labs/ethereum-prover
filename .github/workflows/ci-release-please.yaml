@@ -20,7 +20,7 @@ jobs:
   # Prepare the release PR with changelog updates and create github releases
   # Do not publish to crates.io or upgrade dependencies
   release-please:
-    uses: matter-labs/zksync-ci-common/.github/workflows/release-please.yaml@fcfe16cdf551d9a6b99d9e28d4c705faf0f4c27e
+    uses: matter-labs/zksync-ci-common/.github/workflows/release-please.yaml@371a7ddd803a87629005ceb682ae28e632ba366b # main 2026-10-02
     secrets:
       # Org-level secrets of the GitHub App used to mint installation tokens.
       # API commits are auto-signed.
@@ -54,7 +54,7 @@ jobs:
           private-key: ${{ secrets.MATTERLABS_BOTS_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ matrix.pr_branch }}
           token: ${{ steps.app_token.outputs.token }}
@@ -64,7 +64,7 @@ jobs:
         uses: ./.github/actions/checkout-stack
 
       - name: Install Rust toolchain
-        uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
+        uses: moonrepo/setup-rust@abb2d32350334249b178c401e5ec5836e0cd88d3 # v1.3.0
         with:
           inherit-toolchain: true
           cache: false

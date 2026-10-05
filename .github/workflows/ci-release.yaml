@@ -90,13 +90,13 @@ jobs:
 
       - name: Update release-please release artifacts
         if: ${{ inputs.prerelease_name == '' }}
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ inputs.tag }}
 
       - name: Update manual pre-release metadata
         if: ${{ inputs.prerelease_name != '' }}
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ inputs.tag }}
           name: ethereum-prover ${{ inputs.tag }}${{ inputs.prerelease_name && format(' {0}', inputs.prerelease_name) || '' }}
@@ -117,7 +117,7 @@ jobs:
         working-directory: ./proof_verifier_js/ts
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.tag }}
 
@@ -125,21 +125,21 @@ jobs:
         uses: ./.github/actions/checkout-stack
 
       - name: Install Rust toolchain
-        uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
+        uses: moonrepo/setup-rust@abb2d32350334249b178c401e5ec5836e0cd88d3 # v1.3.0
         with:
           inherit-toolchain: true
 
-      - uses: taiki-e/install-action@3522286d40783523f9c7880e33f785905b4c20d0 # v2.66.1
+      - uses: taiki-e/install-action@e407f7bafb71fd004bc5c2da3032e5470cbb6ef0 # v2.87.24
         with:
           tool: wasm-pack
 
 
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22.x
           registry-url: 'https://registry.npmjs.org'
 
-      - uses: mskelton/setup-yarn@8d0bc12bc7f72a9acfc32019da0381dfcb481df0 # v3.0.0
+      - uses: mskelton/setup-yarn@28f8f658e3991e4d2dd615e2370ec5da0bc64429 # v4.0.0
 
       - name: Upgrade npm for OIDC support
         run: npm install -g npm@11.7.0
@@ -164,7 +164,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout sources
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.tag }}
 
@@ -200,7 +200,7 @@ jobs:
 
       - name: Attach runtime bundle to release
         if: ${{ inputs.upload_prover_bundle }}
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ inputs.tag }}
           files: ${{ env.ARCHIVE_NAME }}

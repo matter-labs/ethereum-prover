@@ -40,11 +40,11 @@ jobs:
     needs: scope
     if: ${{ needs.scope.outputs.release == 'true' }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Checkout v3 stack
         uses: ./.github/actions/checkout-stack
       - name: Install Rust toolchain
-        uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
+        uses: moonrepo/setup-rust@abb2d32350334249b178c401e5ec5836e0cd88d3 # v1.3.0
         with:
           inherit-toolchain: true
           cache: false
@@ -61,26 +61,26 @@ jobs:
         working-directory: ./proof_verifier_js/ts
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Checkout v3 stack
         uses: ./.github/actions/checkout-stack
 
       - name: Install Rust toolchain
-        uses: moonrepo/setup-rust@ede6de059f8046a5e236c94046823e2af11ca670 # v1.2.2
+        uses: moonrepo/setup-rust@abb2d32350334249b178c401e5ec5836e0cd88d3 # v1.3.0
         with:
           inherit-toolchain: true
 
-      - uses: taiki-e/install-action@3522286d40783523f9c7880e33f785905b4c20d0 # v2.66.1
+      - uses: taiki-e/install-action@e407f7bafb71fd004bc5c2da3032e5470cbb6ef0 # v2.87.24
         with:
           tool: wasm-pack
 
       - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
 
-      - uses: mskelton/setup-yarn@8d0bc12bc7f72a9acfc32019da0381dfcb481df0 # v3.0.0
+      - uses: mskelton/setup-yarn@28f8f658e3991e4d2dd615e2370ec5da0bc64429 # v4.0.0
 
       - name: Install deps
         run: yarn install
@@ -96,10 +96,10 @@ jobs:
         working-directory: ./proof_verifier_js/ts
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
 
@@ -126,7 +126,7 @@ jobs:
       - name: Install Git in the CUDA container
         run: apt-get update && apt-get install -y git
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Checkout v3 stack
         uses: ./.github/actions/checkout-stack
@@ -149,13 +149,13 @@ jobs:
     needs: scope
     if: ${{ needs.scope.outputs.release != 'true' }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/checkout-stack
       - uses: ./.github/actions/build-reproducible-guest
       # upload-artifact rejects paths outside the workspace.
       - name: Stage the guest in the workspace
         run: mkdir -p ci-guest && cp -a ../zksync-os/zksync_os/dist/eth_stf/. ci-guest/
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: reproducible-guest
           path: ci-guest/
@@ -181,7 +181,7 @@ jobs:
       - name: Install Git in the CUDA container
         run: apt-get update && apt-get install -y git
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Checkout v3 stack
         uses: ./.github/actions/checkout-stack
@@ -213,7 +213,7 @@ jobs:
         run: cargo nextest archive --release -p ethereum_prover --test integration --archive-file "${PROVER_GPU_TESTS}.tar.zst"
 
       - name: Upload tests
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ env.PROVER_GPU_TESTS }}
           path: |
@@ -236,7 +236,7 @@ jobs:
       - name: Install Git in the CUDA container
         run: apt-get update && apt-get install -y git
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Checkout v3 stack
         uses: ./.github/actions/checkout-stack
@@ -272,7 +272,7 @@ jobs:
       - ethereum-prover-gpu-tests
     steps:
       - name: Decide on PR checks
-        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # v1.2.2
+        uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # v1.3.0
         with:
           jobs: ${{ toJSON(needs) }}
           # One side is always skipped: the lockfile check on normal PRs, the rest on release PRs.
