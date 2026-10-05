@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/matter-labs/ethereum-prover/compare/v0.1.4...v0.2.0) (2026-10-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* prove on the v3 stack and reimplement the prover service ([#30](https://github.com/matter-labs/ethereum-prover/issues/30))
+
+### Features
+
+* prove on the v3 stack and reimplement the prover service ([#30](https://github.com/matter-labs/ethereum-prover/issues/30)) ([6deabc4](https://github.com/matter-labs/ethereum-prover/commit/6deabc4dda19cb8a1510d8cbf2173c9df4043e2d))
+
 ## [0.1.4](https://github.com/matter-labs/ethereum-prover/compare/v0.1.3...v0.1.4) (2026-05-11)
 
 
